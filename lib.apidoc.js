@@ -294,7 +294,7 @@ local.templateApidocHtml = '\
         {{#if env.npm_package_homepage}}\n\
         href="{{env.npm_package_homepage}}"\n\
         {{/if env.npm_package_homepage}}\n\
-    >{{env.npm_package_nameAlias}} (v{{env.npm_package_version}})</a>\n\
+    >{{env.npm_package_name}} (v{{env.npm_package_version}})</a>\n\
 </h1>\n\
 <div class="apidocSectionDiv"><a\n\
     href="#apidoc.tableOfContents"\n\
@@ -347,9 +347,9 @@ local.templateApidocHtml = '\
 local.templateApidocMd = '\
 # api-documentation for \
 {{#if env.npm_package_homepage}} \
-[{{env.npm_package_nameAlias}} (v{{env.npm_package_version}})]({{env.npm_package_homepage}}) \
+[{{env.npm_package_name}} (v{{env.npm_package_version}})]({{env.npm_package_homepage}}) \
 {{#unless env.npm_package_homepage}} \
-{{env.npm_package_nameAlias}} (v{{env.npm_package_version}}) \
+{{env.npm_package_name}} (v{{env.npm_package_version}}) \
 {{/if env.npm_package_homepage}} \
 \n\
 \n\

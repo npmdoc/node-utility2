@@ -29,6 +29,7 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 [![apidoc](https://kaizhu256.github.io/node-utility2/build/screen-capture.buildApidoc.browser._2Fhome_2Ftravis_2Fbuild_2Fkaizhu256_2Fnode-utility2_2Ftmp_2Fbuild_2Fapidoc.html.png)](https://kaizhu256.github.io/node-utility2/build..beta..travis-ci.org/apidoc.html)
 
 #### todo
+- npm publish 2017.3.10
 - add npm script publish-deprecate
 - shFileTrimLeft example.* before shBuildGithubUpload
 - allow server-side stdout to be streamed to webapps
@@ -38,14 +39,8 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 - add server stress test using electron
 - none
 
-#### change since 345e02c6
-- npm publish 2017.3.9
-- add functions moduleDirname and onErrorAssert
-- add shell-command shPasswordEnvUnset
-- rename name api-doc -> apidoc
-- revamp build scripts
-- split function buildApidoc into new file lib.apidoc.js
-- verify README.md's build-links during build
+#### change since fdfeb47b
+- partially revert npm_package_nameAlias back to npm_package_name
 - none
 
 #### this package requires
@@ -401,7 +396,7 @@ instruction
 <head>\n\
 <meta charset="UTF-8">\n\
 <meta name="viewport" content="width=device-width, initial-scale=1">\n\
-<title>{{env.npm_package_nameAlias}} (v{{env.npm_package_version}})</title>\n\
+<title>{{env.npm_package_name}} (v{{env.npm_package_version}})</title>\n\
 <style>\n\
 /*csslint\n\
     box-sizing: false,\n\
@@ -453,7 +448,7 @@ utility2-comment -->\n\
         target="_blank"\n\
     >\n\
 utility2-comment -->\n\
-        {{env.npm_package_nameAlias}} (v{{env.npm_package_version}})\n\
+        {{env.npm_package_name}} (v{{env.npm_package_version}})\n\
 <!-- utility2-comment\n\
     </a>\n\
 utility2-comment -->\n\
@@ -697,7 +692,7 @@ utility2-comment -->\n\
         "start": "export PORT=${PORT:-8080} && if [ -f assets.app.js ]; then node assets.app.js; return; fi && export npm_config_mode_auto_restart=1 && ./lib.utility2.sh shRun shIstanbulCover test.js",
         "test": "export PORT=$(./lib.utility2.sh shServerPortRandom) && export PORT_REPL=$(./lib.utility2.sh shServerPortRandom) && export npm_config_mode_auto_restart=1 && ./lib.utility2.sh test test.js"
     },
-    "version": "2017.3.9"
+    "version": "2017.3.10"
 }
 ```
 
