@@ -1277,7 +1277,10 @@
                     // test nested value handling-behavior
                     ee: { ff: 'gg' }
                 });
-            local.assertJsonEqual(options.data, '<aa> &quot;&lt;aa&gt;&quot; 1 null {{dd}} gg');
+            local.assertJsonEqual(
+                options.data,
+                '<aa> &#x22;&#x3c;aa&#x3e;&#x22; 1 null {{dd}} gg'
+            );
             // test partial handling-behavior
             options.data = local.templateRender('{{#undefined aa}}\n' +
                 'list1{{#each list1}}\n' +
@@ -1525,70 +1528,25 @@
             options.onNext();
         };
 
-        local.testCase_buildApiDoc_default = function (options, onError) {
+        local.testCase_buildApidoc_default = function (options, onError) {
         /*
-         * this function will test buildApiDoc's handling-behavior
+         * this function will test buildApidoc's default handling-behavior
          */
             // test $npm_config_mode_coverage = all handling-behavior
             local.testMock([
                 [local.env, { npm_config_mode_coverage: 'all' }]
             ], function (onError) {
-                local.buildApiDoc(null, onError);
+                local.buildApidoc(null, onError);
             }, local.nop);
-            options = { blacklistDict: {}, moduleDict: {
-                'utility2.Blob': {
-                    exampleFileList: [],
-                    exports: local.Blob
-                },
-                'utility2.Blob.prototype': {
-                    exampleFileList: [],
-                    exports: local.Blob.prototype
-                },
-                'utility2.FormData': {
-                    exampleFileList: [],
-                    exports: local.FormData
-                },
-                'utility2.FormData.prototype': {
-                    exampleFileList: [],
-                    exports: local.FormData.prototype
-                },
-                'utility2.istanbul': {
-                    exampleFileList: ['lib.istanbul.js'],
-                    exports: local.istanbul
-                },
-                'utility2.jslint': {
-                    exampleFileList: ['lib.jslint.js'],
-                    exports: local.jslint
-                },
-                'utility2.db': {
-                    exampleFileList: ['lib.db.js'],
-                    exports: local.db
-                },
-                'utility2.db._DbTable': {
-                    exampleFileList: ['lib.db.js'],
-                    exports: local.db._DbTable
-                },
-                'utility2.db._DbTable.prototype': {
-                    exampleFileList: ['lib.db.js'],
-                    exports: local.db._DbTable.prototype
-                },
-                'utility2.sjcl': {
-                    exampleFileList: ['lib.sjcl.js'],
-                    exports: local.sjcl
-                },
-                'utility2.uglifyjs': {
-                    exampleFileList: ['lib.uglifyjs.js'],
-                    exports: local.uglifyjs
-                }
-            } };
-            local.buildApiDoc(options, onError);
+            options = { blacklistDict: {} };
+            local.buildApidoc(options, onError);
         };
 
         local.testCase_buildApp_default = function (options, onError) {
         /*
-         * this function will test buildApp's handling-behavior
+         * this function will test buildApp's default handling-behavior
          */
-            local.testCase_buildReadme_default(options, local.onErrorDefault);
+            local.testCase_buildReadme_default(options, local.onErrorAssert);
             options = [{
                 file: '/assets.hello',
                 url: '/assets.hello'
@@ -1622,7 +1580,7 @@
 
         local.testCase_buildReadme_default = function (options, onError) {
         /*
-         * this function will test buildReadme's handling-behavior
+         * this function will test buildReadme's default handling-behavior
          */
             options = {};
             options.customize = function () {
@@ -1634,11 +1592,10 @@
                     // customize quickstart-instruction
                     (/\ninstruction[^`]*?\n\n/),
                     // customize quickstart-footer
-                    (/download standalone app[^`]*?<\/body>/),
+                    (/download standalone app[^`]*?utility2FooterDiv/),
                     (/```[^`]*?# package.json/),
                     // customize build-script
-                    (/shBuild\(\)[^`]*?\)\}/),
-                    (/shBuildCiTestPre[^`]*?\)\}/)
+                    (/# init env[^`]*?```/)
                 ].forEach(function (rgx) {
                     options.readmeFrom.replace(rgx, function (match0) {
                         options.readmeTo = options.readmeTo.replace(rgx, match0);
@@ -1778,6 +1735,26 @@
                 onParallel();
             });
             onParallel();
+        };
+
+        local.testCase_moduleDirname_default = function (options, onError) {
+        /*
+         * this function will test moduleDirname's default handling-behavior
+         */
+            options = {};
+            // test null-case handling-behavior
+            options.data = local.moduleDirname();
+            local.assertJsonEqual(options.data, process.cwd());
+            // test path handling-behavior
+            options.data = local.moduleDirname('.');
+            local.assertJsonEqual(options.data, process.cwd());
+            // test module exists handling-behavior
+            options.data = local.moduleDirname('electron-lite');
+            local.assert((/\/electron-lite$/).test(options.data), options.data);
+            // test module does not exists handling-behavior
+            options.data = local.moduleDirname('undefined');
+            local.assertJsonEqual(options.data, '');
+            onError();
         };
 
         local.testCase_onFileModifiedRestart_watchFile = function (options, onError) {
@@ -2112,7 +2089,7 @@
             local.Module.runMain();
         }
         switch (local.env.HEROKU_APP_NAME) {
-        case 'h1-cron':
+        case 'h1-cron1':
             local.cronJob = local.nop;
             // update cron
             local.ajax({
@@ -2134,7 +2111,7 @@
                 // cron every 5 minutes
                 if (local.cronTime.getUTCMinutes() % 5 === 0) {
                     // heroku-keepalive
-                    local.ajax({ url: 'https://h1-cron.herokuapp.com' }, local.nop);
+                    local.ajax({ url: 'https://h1-cron1.herokuapp.com' }, local.nop);
                     // update cron
                     local.ajax({
                         url: 'https://kaizhu256.github.io/node-utility2/cronJob.js'
