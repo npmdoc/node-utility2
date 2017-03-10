@@ -1578,6 +1578,21 @@
             local.buildApp(options, onError);
         };
 
+        local.testCase_buildNpmdoc_default = function (options, onError) {
+        /*
+         * this function will test buildNpmdoc's default handling-behavior
+         */
+            local.testMock([
+                [local, { buildApidoc: function (options, onError) {
+                    onError(null, options);
+                } }],
+                [local.fs, { writeFileSync: local.nop }]
+            ], function (onError) {
+                options = {};
+                local.buildNpmdoc(options, onError);
+            }, onError);
+        };
+
         local.testCase_buildReadme_default = function (options, onError) {
         /*
          * this function will test buildReadme's default handling-behavior
