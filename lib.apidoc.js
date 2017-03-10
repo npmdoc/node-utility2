@@ -523,8 +523,6 @@ npm-package \
             local.objectSetDefault(options, { env: {
                 npm_package_homepage: options.packageJson.homepage,
                 npm_package_name: options.packageJson.name,
-                npm_package_nameAlias: options.packageJson.nameAlias ||
-                    options.packageJson.name,
                 npm_package_version: options.packageJson.version
             } }, 2);
             local.objectSetDefault(options, {
@@ -548,8 +546,8 @@ npm-package \
                     })
             ).map(readExample));
             // init moduleMain
-            moduleMain = options.moduleDict[options.env.npm_package_nameAlias] =
-                options.moduleDict[options.env.npm_package_nameAlias] || require(options.dir);
+            moduleMain = options.moduleDict[options.env.npm_package_name] =
+                options.moduleDict[options.env.npm_package_name] || require(options.dir);
             // init circularList - builtin
             Object.keys(process.binding('natives')).forEach(function (key) {
                 if (!(/\/|_linklist|sys/).test(key)) {
@@ -592,8 +590,8 @@ npm-package \
                 } catch (ignore) {
                 }
             }());
-            module = options.moduleExtraDict[options.env.npm_package_nameAlias] =
-                options.moduleExtraDict[options.env.npm_package_nameAlias] || {};
+            module = options.moduleExtraDict[options.env.npm_package_name] =
+                options.moduleExtraDict[options.env.npm_package_name] || {};
             (options.libFileList || []).forEach(function (file) {
                 try {
                     tmp = {
@@ -613,10 +611,10 @@ npm-package \
             });
             local.apidocModuleDictAdd(options, options.moduleExtraDict);
             // normalize moduleMain
-            moduleMain = options.moduleDict[options.env.npm_package_nameAlias] =
+            moduleMain = options.moduleDict[options.env.npm_package_name] =
                 local.objectSetDefault({}, moduleMain);
             Object.keys(options.moduleDict).forEach(function (key) {
-                if (key.indexOf(options.env.npm_package_nameAlias + '.') !== 0) {
+                if (key.indexOf(options.env.npm_package_name + '.') !== 0) {
                     return;
                 }
                 tmp = key.split('.').slice(1).join('.');
