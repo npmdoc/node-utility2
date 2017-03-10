@@ -654,7 +654,6 @@ local.assetsDict['/assets.testReport.template.html'] = '\
         href="{{env.npm_package_homepage}}"\n\
         {{/if env.npm_package_homepage}}\n\
     >{{env.npm_package_name}} (v{{env.npm_package_version}})</a>\n\
-    npm-package\n\
 </h1>\n\
 <div class="testReportPlatformDiv summary">\n\
 <h2>summary</h2>\n\

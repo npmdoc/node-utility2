@@ -375,53 +375,6 @@ shDeployHeroku() {(set -e
         shBrowserTest) || return $?
 )}
 
-shModuleDirname() {(set -e
-# this function will print the __dirname of the $MODULE
-    MODULE="$1"
-    node -e "
-// <script>
-/*jslint
-    bitwise: true,
-    browser: true,
-    maxerr: 8,
-    maxlen: 96,
-    node: true,
-    nomen: true,
-    regexp: true,
-    stupid: true
-*/
-'use strict';
-var local;
-local = {};
-local.moduleDirname = function (module) {
-/*
- * this function will return the __dirname of the module
- */
-    var result;
-    if (!module || module.indexOf('/') >= 0 || module === '.') {
-        return require('path').resolve(process.cwd(), module || '');
-    }
-    try {
-        require(module);
-    } catch (ignore) {
-    }
-    [
-        new RegExp('(.*?/' + module + ')\\b'),
-        new RegExp('(.*?/' + module + ')/[^/].*?$')
-    ].some(function (rgx) {
-        return Object.keys(require.cache).some(function (key) {
-            result = rgx.exec(key);
-            result = result && result[1];
-            return result;
-        });
-    });
-    return result || '';
-};
-console.log(local.moduleDirname('$MODULE'));
-// </script>
-    "
-)}
-
 shDockerBuildCleanup() {(set -e
 # this function will cleanup the docker build
     rm -fr \
@@ -1360,6 +1313,53 @@ shMain() {
         ;;
     esac
 }
+
+shModuleDirname() {(set -e
+# this function will print the __dirname of the $MODULE
+    MODULE="$1"
+    node -e "
+// <script>
+/*jslint
+    bitwise: true,
+    browser: true,
+    maxerr: 8,
+    maxlen: 96,
+    node: true,
+    nomen: true,
+    regexp: true,
+    stupid: true
+*/
+'use strict';
+var local;
+local = {};
+local.moduleDirname = function (module) {
+/*
+ * this function will return the __dirname of the module
+ */
+    var result;
+    if (!module || module.indexOf('/') >= 0 || module === '.') {
+        return require('path').resolve(process.cwd(), module || '');
+    }
+    try {
+        require(module);
+    } catch (ignore) {
+    }
+    [
+        new RegExp('(.*?/' + module + ')\\b'),
+        new RegExp('(.*?/' + module + ')/[^/].*?$')
+    ].some(function (rgx) {
+        return Object.keys(require.cache).some(function (key) {
+            result = rgx.exec(key);
+            result = result && result[1];
+            return result;
+        });
+    });
+    return result || '';
+};
+console.log(local.moduleDirname('$MODULE'));
+// </script>
+    "
+)}
 
 shMountData() {(set -e
 # this function will mount $1 to /mnt/data, and is intended for aws-ec2 setup
