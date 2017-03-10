@@ -11392,24 +11392,41 @@ return Utf8ArrayToStr(bff);
         /*
          * this function will build the npmdoc
          */
-            var packageJson;
+            var onParallel, packageJson;
+            onParallel = local.utility2.onParallel(onError);
+            onParallel.counter += 1;
+            // build package.json
+            packageJson = JSON.parse(local.fs.readFileSync('package.json', 'utf8'));
+            packageJson.keywords = ['documentation', packageJson.nameApidoc];
+            onParallel.counter += 1;
+            local.buildReadme({
+                readmeFrom: '\n# package.json\n```json\n' +
+                    JSON.stringify(packageJson) +
+                    '\n```\n'
+            }, onParallel);
             packageJson = JSON.parse(local.fs.readFileSync('package.json', 'utf8'));
             // build apidoc.html
-            options = {};
-            options.dir = local.env.npm_package_nameApidoc;
-            local.buildApidoc(options, onError);
+            onParallel.counter += 1;
+            local.buildApidoc({
+                dir: local.env.npm_package_nameApidoc
+            }, onParallel);
             // build README.md
             options = {};
-            options.dir = local.env.npm_package_nameApidoc;
-            options.template = local.apidoc.templateApidocMd;
-            options.readme = local.apidocCreate(options);
+            options.readme = local.apidocCreate({
+                dir: local.env.npm_package_nameApidoc,
+                template: local.apidoc.templateApidocMd
+            });
             local.fs.writeFileSync('README.md', options.readme);
-            // build package.json
-            packageJson.description = options.readme.exec(/.*/)[0];
+            // re-build package.json
+            packageJson.description = (/.*/).exec(options.readme)[0]
+                .slice(2)
+                .replace((/ {2,}/g), ' ')
+                .trim();
             local.fs.writeFileSync(
                 'package.json',
-                local.jsonStringifyOrdered(packageJson, null, 4)
+                local.jsonStringifyOrdered(packageJson, null, 4) + '\n'
             );
+            onParallel();
         };
 
         local.buildReadme = function (options, onError) {
