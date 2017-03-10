@@ -434,7 +434,6 @@ local.assetsDict['/assets.index.template.html'].replace((/\n/g), '\\n\\\n') +
                     env: local.objectSetDefault(local.env, {\n\
                         npm_package_description: \'example module\',\n\
                         npm_package_name: \'example\',\n\
-                        npm_package_nameAlias: \'example\',\n\
                         npm_package_version: \'0.0.1\'\n\
                     })\n\
                 }\n\
