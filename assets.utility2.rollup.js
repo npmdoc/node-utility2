@@ -9621,8 +9621,6 @@ local.assetsDict['/assets.index.template.html'].replace((/\n/g), '\\n\\\n') +
                         return \'example module\';\n\
                     case \'npm_package_name\':\n\
                         return \'example\';\n\
-                    case \'npm_package_nameAlias\':\n\
-                        return \'example\';\n\
                     case \'npm_package_version\':\n\
                         return \'0.0.1\';\n\
                     }\n\
@@ -11392,6 +11390,34 @@ return Utf8ArrayToStr(bff);
                     onParallel();
                 });
             onParallel();
+        };
+
+        local.buildNpmdoc = function (options, onError) {
+        /*
+         * this function will build the npmdoc
+         */
+            // build apidoc.html
+            options = {};
+            options.dir = local.env.npm_package_nameApidoc;
+            local.buildApidoc(options, local.onErrorAssert);
+            // build README.md
+            options = {};
+            options.dir = local.env.npm_package_nameApidoc;
+            options.template = local.apidoc.templateApidocMd;
+            options.readme = local.apidocCreate(options);
+            local.fs.writeFileSync('README.md', options.readme);
+            // build package.json
+            options.packageJson = JSON.parse(local.fs.readFileSync('package.json', 'utf8'));
+            local.objectSetDefault(options, {
+                nameAlias: options.packageJson.name,
+                version: '0.0.1'
+            });
+            options.packageJson.description = options.readme.exec(/.*/)[0];
+            local.fs.writeFileSync(
+                'package.json',
+                local.jsonStringifyOrdered(options.packageJson, null, 4)
+            );
+            onError();
         };
 
         local.buildReadme = function (options, onError) {

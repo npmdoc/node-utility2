@@ -573,8 +573,6 @@ utility2-comment -->\n\
                         return 'example module';
                     case 'npm_package_name':
                         return 'example';
-                    case 'npm_package_nameAlias':
-                        return 'example';
                     case 'npm_package_version':
                         return '0.0.1';
                     }
