@@ -9694,7 +9694,6 @@ local.assetsDict['/assets.index.template.html'].replace((/\n/g), '\\n\\\n') +
         "darwin",\n\
         "linux"\n\
     ],\n\
-    "readmeParse": "1",\n\
     "repository": {\n\
         "type": "git",\n\
         "url": "https://github.com/kaizhu256/node-jslint-lite.git"\n\
