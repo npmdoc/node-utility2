@@ -515,9 +515,8 @@ npm-package \
                 return text;
             };
             // init options
-            options = local.objectSetDefault(options, {});
             options.dir = local.moduleDirname(options.dir);
-            options = local.objectSetDefault(options, {
+            local.objectSetDefault(options, {
                 packageJson: JSON.parse(readExample('package.json'))
             });
             local.objectSetDefault(options, { env: {

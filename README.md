@@ -558,7 +558,6 @@ utility2-comment -->\n\
                     env: local.objectSetDefault(local.env, {
                         npm_package_description: 'example module',
                         npm_package_name: 'example',
-                        npm_package_nameAlias: 'example',
                         npm_package_version: '0.0.1'
                     })
                 }

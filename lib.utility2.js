@@ -2124,7 +2124,7 @@ return Utf8ArrayToStr(bff);
                 onError();
                 return;
             }
-            options = local.objectSetDefault(options, { blacklistDict: local });
+            local.objectSetDefault(options, { blacklistDict: local });
             // create apidoc.html
             local.fsWriteFileWithMkdirpSync(
                 local.env.npm_config_dir_build + '/apidoc.html',
@@ -2223,10 +2223,12 @@ return Utf8ArrayToStr(bff);
         /*
          * this function will build the npmdoc
          */
+            var packageJson;
+            packageJson = JSON.parse(local.fs.readFileSync('package.json', 'utf8'));
             // build apidoc.html
             options = {};
             options.dir = local.env.npm_package_nameApidoc;
-            local.buildApidoc(options, local.onErrorAssert);
+            local.buildApidoc(options, onError);
             // build README.md
             options = {};
             options.dir = local.env.npm_package_nameApidoc;
@@ -2234,17 +2236,11 @@ return Utf8ArrayToStr(bff);
             options.readme = local.apidocCreate(options);
             local.fs.writeFileSync('README.md', options.readme);
             // build package.json
-            options.packageJson = JSON.parse(local.fs.readFileSync('package.json', 'utf8'));
-            local.objectSetDefault(options, {
-                nameAlias: options.packageJson.name,
-                version: '0.0.1'
-            });
-            options.packageJson.description = options.readme.exec(/.*/)[0];
+            packageJson.description = options.readme.exec(/.*/)[0];
             local.fs.writeFileSync(
                 'package.json',
-                local.jsonStringifyOrdered(options.packageJson, null, 4)
+                local.jsonStringifyOrdered(packageJson, null, 4)
             );
-            onError();
         };
 
         local.buildReadme = function (options, onError) {
