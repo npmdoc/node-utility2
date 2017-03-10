@@ -295,6 +295,7 @@ local.templateApidocHtml = '\
         href="{{env.npm_package_homepage}}"\n\
         {{/if env.npm_package_homepage}}\n\
     >{{env.npm_package_name}} (v{{env.npm_package_version}})</a>\n\
+    npm-package\n\
 </h1>\n\
 <div class="apidocSectionDiv"><a\n\
     href="#apidoc.tableOfContents"\n\
@@ -351,6 +352,7 @@ local.templateApidocMd = '\
 {{#unless env.npm_package_homepage}} \
 {{env.npm_package_name}} (v{{env.npm_package_version}}) \
 {{/if env.npm_package_homepage}} \
+npm-package \
 \n\
 \n\
 \n\
@@ -520,6 +522,7 @@ local.templateApidocMd = '\
             });
             local.objectSetDefault(options, { env: {
                 npm_package_homepage: options.packageJson.homepage,
+                npm_package_name: options.packageJson.name,
                 npm_package_nameAlias: options.packageJson.nameAlias ||
                     options.packageJson.name,
                 npm_package_version: options.packageJson.version

@@ -339,6 +339,7 @@ local.templateApidocHtml = '\
         href="{{env.npm_package_homepage}}"\n\
         {{/if env.npm_package_homepage}}\n\
     >{{env.npm_package_name}} (v{{env.npm_package_version}})</a>\n\
+    npm-package\n\
 </h1>\n\
 <div class="apidocSectionDiv"><a\n\
     href="#apidoc.tableOfContents"\n\
@@ -395,6 +396,7 @@ local.templateApidocMd = '\
 {{#unless env.npm_package_homepage}} \
 {{env.npm_package_name}} (v{{env.npm_package_version}}) \
 {{/if env.npm_package_homepage}} \
+npm-package \
 \n\
 \n\
 \n\
@@ -564,6 +566,7 @@ local.templateApidocMd = '\
             });
             local.objectSetDefault(options, { env: {
                 npm_package_homepage: options.packageJson.homepage,
+                npm_package_name: options.packageJson.name,
                 npm_package_nameAlias: options.packageJson.nameAlias ||
                     options.packageJson.name,
                 npm_package_version: options.packageJson.version
@@ -9604,6 +9607,7 @@ local.assetsDict['/assets.index.template.html'].replace((/\n/g), '\\n\\\n') +
                 {\n\
                     env: local.objectSetDefault(local.env, {\n\
                         npm_package_description: \'example module\',\n\
+                        npm_package_name: \'example\',\n\
                         npm_package_nameAlias: \'example\',\n\
                         npm_package_version: \'0.0.1\'\n\
                     })\n\
@@ -9617,6 +9621,8 @@ local.assetsDict['/assets.index.template.html'].replace((/\n/g), '\\n\\\n') +
                     switch (match1) {\n\
                     case \'npm_package_description\':\n\
                         return \'example module\';\n\
+                    case \'npm_package_name\':\n\
+                        return \'example\';\n\
                     case \'npm_package_nameAlias\':\n\
                         return \'example\';\n\
                     case \'npm_package_version\':\n\
@@ -9822,6 +9828,7 @@ local.assetsDict['/assets.testReport.template.html'] = '\
         href="{{env.npm_package_homepage}}"\n\
         {{/if env.npm_package_homepage}}\n\
     >{{env.npm_package_name}} (v{{env.npm_package_version}})</a>\n\
+    npm-package\n\
 </h1>\n\
 <div class="testReportPlatformDiv summary">\n\
 <h2>summary</h2>\n\
@@ -10537,6 +10544,7 @@ local.assetsDict['/favicon.ico'] = '';
                     npm_config_mode_backend: local.env.npm_config_mode_backend,
                     npm_package_description: local.env.npm_package_description,
                     npm_package_homepage: local.env.npm_package_homepage,
+                    npm_package_name: local.env.npm_package_name,
                     npm_package_nameAlias: local.env.npm_package_nameAlias,
                     npm_package_version: local.env.npm_package_version
                 } } }, 3);
