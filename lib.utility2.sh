@@ -304,7 +304,7 @@ shBuildCi() {(set -e
         return
     fi
     # docker build
-    docker build -f "tmp/README.Dockerfile.$DOCKER_TAG" -t "$GITHUB_REPO:$DOCKER_TAG"
+    docker build -f "tmp/README.Dockerfile.$DOCKER_TAG" -t "$GITHUB_REPO:$DOCKER_TAG" .
     # docker test
     case "$CI_BRANCH" in
     docker.base)
