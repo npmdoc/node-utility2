@@ -770,27 +770,12 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         git \
         xvfb && \
     npm install "kaizhu256/node-electron-lite#alpha" && \
-    cp -a node_modules / && \
     cd node_modules/electron-lite && \
     npm install && \
     export DISPLAY=:99.0 && \
     (Xvfb "$DISPLAY" &) && \
-    npm test
-# install elasticsearch and kibana
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    mkdir -p /usr/share/man/man1 && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y \
-        default-jre && \
-    curl -#Lo elasticsearch.tar.gz \
-        https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.tar.gz && \
-    rm -fr /elasticsearch && \
-    mkdir -p /elasticsearch && \
-    tar -xzf elasticsearch.tar.gz --strip-components=1 -C /elasticsearch && \
-    curl -#Lo kibana.tar.gz https://download.elastic.co/kibana/kibana/kibana-3.1.3.tar.gz && \
-    rm -fr /kibana && \
-    mkdir -p /kibana && \
-    tar -xzf kibana.tar.gz --strip-components=1 -C /kibana
+    npm test && \
+    cp /tmp/electron-*.zip /
 # install extras
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
@@ -838,6 +823,21 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     export DISPLAY=:99.0 && \
     (Xvfb "$DISPLAY" &) && \
     npm test
+# install elasticsearch and kibana
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    mkdir -p /usr/share/man/man1 && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y \
+        default-jre && \
+    curl -#Lo elasticsearch.tar.gz \
+        https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.tar.gz && \
+    rm -fr /elasticsearch && \
+    mkdir -p /elasticsearch && \
+    tar -xzf elasticsearch.tar.gz --strip-components=1 -C /elasticsearch && \
+    curl -#Lo kibana.tar.gz https://download.elastic.co/kibana/kibana/kibana-3.1.3.tar.gz && \
+    rm -fr /kibana && \
+    mkdir -p /kibana && \
+    tar -xzf kibana.tar.gz --strip-components=1 -C /kibana
 ```
 
 - build_ci.sh
