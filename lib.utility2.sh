@@ -295,6 +295,40 @@ shBuildCi() {(set -e
         rm "$HOME/.npmrc"
         ;;
     esac
+    # docker build
+    docker --version 2>/dev/null || return
+    export DOCKER_TAG="$(printf "$CI_BRANCH" | sed -e "s/docker.//")"
+    # if $DOCKER_TAG is not unique from $CI_BRANCH, then return
+    if [ "$DOCKER_TAG" = "$CI_BRANCH" ]
+    then
+        return
+    fi
+    # docker build
+    docker build -f "tmp/README.Dockerfile.$DOCKER_TAG" -t "$GITHUB_REPO:$DOCKER_TAG"
+    # docker test
+    case "$CI_BRANCH" in
+    docker.base)
+        # npm test utility2
+        for PACKAGE in utility2 "kaizhu256/node-utility2#alpha"
+        do
+            docker run "$GITHUB_REPO:$DOCKER_TAG" /bin/bash -c "set -e
+                curl https://raw.githubusercontent.com\
+/kaizhu256/node-utility2/alpha/lib.utility2.sh > /tmp/lib.utility2.sh
+                . /tmp/lib.utility2.sh
+                npm install '$PACKAGE'
+                cd node_modules/utility2
+                shBuildInsideDocker
+            "
+        done
+        ;;
+    esac
+    # https://docs.travis-ci.com/user/docker/#Pushing-a-Docker-Image-to-a-Registry
+    # docker push
+    if [ "$DOCKER_PASSWORD" ]
+    then
+        docker login -p="$DOCKER_PASSWORD" -u="$DOCKER_USERNAME"
+        docker push "$GITHUB_REPO:$DOCKER_TAG"
+    fi
 )}
 
 shBuildCiInternal() {(set -e
@@ -2437,9 +2471,11 @@ shRunScreenCapture() {(set -e
 # this function will run the command $* and screen-capture the output
     EXIT_CODE=0
     export MODE_BUILD_SCREEN_CAPTURE="screen-capture.${MODE_BUILD:-undefined}.svg"
-    (printf "0" > "$npm_config_file_tmp"
-        (eval shRun $* 2>&1) ||
-        printf $? > "$npm_config_file_tmp") | tee "$npm_config_dir_tmp/screen-capture.txt"
+    (
+        printf "0" > "$npm_config_file_tmp"
+        (eval shRun $* 2>&1)
+        printf $? > "$npm_config_file_tmp"
+    ) | tee "$npm_config_dir_tmp/screen-capture.txt"
     EXIT_CODE="$(cat "$npm_config_file_tmp")"
     shBuildPrint "EXIT_CODE - $EXIT_CODE"
     [ "$EXIT_CODE" = 0 ] || return "$EXIT_CODE"
