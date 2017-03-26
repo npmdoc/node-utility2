@@ -29,6 +29,7 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 
 #### todo
 - npm publish 2017.3.22
+- calculate peer-dependencies for packages
 - add function to remotely update .travis.yml
 - query failed travis-ci builds
 - rename sub-package db-lite -> nedb-lite
@@ -42,6 +43,7 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 - none
 
 #### changes for v2017.3.22
+- add npm-package badge to npmdoc
 - add branch-cron
 - add github-crud function contentTouchList
 - add shell-function shGitRemotePromote to auto-promote branches alpha -> beta -> master

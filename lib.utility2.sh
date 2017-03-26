@@ -1951,6 +1951,17 @@ shNpmPublish() {(set -e
     shNpmPublishAlias $*
 )}
 
+shNpmPublishListAfterCommit() {(set -e
+# this function will npm-publish the $GITHUB_REPO $LIST after commit
+    LIST="$1"
+    LIST2=""
+    for GITHUB_REPO in $LIST
+    do
+        LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
+    done
+    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommit]'
+)}
+
 shNpmPublishListAfterCommitAfterBuild() {(set -e
 # this function will npm-publish the $GITHUB_REPO $LIST after commit after build
     LIST="$1"
@@ -1959,7 +1970,7 @@ shNpmPublishListAfterCommitAfterBuild() {(set -e
     do
         LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
     done
-    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommit]' &
+    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommitAfterBuild]'
 )}
 
 shNpmPublishAlias() {(set -e
@@ -2831,10 +2842,10 @@ shTravisRepoListGetJson() {(set -e
         "https://api.travis-ci.org/repos?$1"
 )}
 
-shTravisTaskRun() {(set -e
-# this function will push the shell-task $1 to travis
+shTravisTaskPush() {(set -e
+# this function will push the shell-task-script $1 with the message $2 to travis
     utility2-github-crud put https://github.com/kaizhu256/node-utility2/blob/task/.task.sh \
-        "$1" '[$ /bin/sh .task.sh]'
+        "$1" '[$ /bin/sh .task.sh] $2'
 )}
 
 shUbuntuInit() {
