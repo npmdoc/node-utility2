@@ -755,7 +755,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         curl && \
     (busybox --list | xargs -n1 /bin/sh -c 'ln -s /bin/busybox /bin/$0 2>/dev/null' || true) \
         && \
-    curl -sL https://deb.nodesource.com/setup_6.x | /bin/bash - && \
+    curl -#L https://deb.nodesource.com/setup_6.x | /bin/bash - && \
     apt-get install -y nodejs
 # install electron-lite
 VOLUME [ \
@@ -770,12 +770,27 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         git \
         xvfb && \
     npm install "kaizhu256/node-electron-lite#alpha" && \
+    cp -a node_modules / && \
     cd node_modules/electron-lite && \
     npm install && \
     export DISPLAY=:99.0 && \
     (Xvfb "$DISPLAY" &) && \
-    npm test && \
-    cp /tmp/electron-*.zip /
+    npm test
+# install elasticsearch and kibana
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    mkdir -p /usr/share/man/man1 && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y \
+        default-jre && \
+    curl -#Lo elasticsearch.tar.gz \
+        https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.tar.gz && \
+    rm -fr /elasticsearch && \
+    mkdir -p /elasticsearch && \
+    tar -xzf elasticsearch.tar.gz --strip-components=1 -C /elasticsearch && \
+    curl -#Lo kibana.tar.gz https://download.elastic.co/kibana/kibana/kibana-3.1.3.tar.gz && \
+    rm -fr /kibana && \
+    mkdir -p /kibana && \
+    tar -xzf kibana.tar.gz --strip-components=1 -C /kibana
 # install extras
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
@@ -784,19 +799,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         transmission-daemon \
         ssh \
         vim
-```
-
-- Dockerfile.elasticsearch
-```shell
-# Dockerfile.elasticsearch
-FROM kaizhu256/node-utility2:latest
-MAINTAINER kai zhu <kaizhu256@gmail.com>
-# install swagger-ui
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    rm -fr /swagger-ui && \
-    git clone --branch=v2.1.5 --single-branch \
-        https://github.com/swagger-api/swagger-ui.git && \
-    mv swagger-ui/dist /swagger-ui
 ```
 
 - Dockerfile.emscripten
@@ -827,21 +829,14 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # Dockerfile.latest
 FROM kaizhu256/node-utility2:base
 MAINTAINER kai zhu <kaizhu256@gmail.com>
-# install elasticsearch and kibana
+# install utility2
 RUN export DEBIAN_FRONTEND=noninteractive && \
-    mkdir -p /usr/share/man/man1 && \
-    apt-get update && \
-    apt-get install --no-install-recommends -y \
-        default-jre && \
-    curl -#Lo elasticsearch.tar.gz \
-        https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.tar.gz && \
-    rm -fr /elasticsearch && \
-    mkdir -p /elasticsearch && \
-    tar -xzf elasticsearch.tar.gz --strip-components=1 -C /elasticsearch && \
-    curl -#Lo kibana.tar.gz https://download.elastic.co/kibana/kibana/kibana-3.1.3.tar.gz && \
-    rm -fr /kibana && \
-    mkdir -p /kibana && \
-    tar -xzf kibana.tar.gz --strip-components=1 -C /kibana
+    npm install "kaizhu256/node-utility2#alpha" && \
+    cp -a node_modules / && \
+    cd node_modules/utility2 && \
+    export DISPLAY=:99.0 && \
+    (Xvfb "$DISPLAY" &) && \
+    npm test
 ```
 
 - build_ci.sh

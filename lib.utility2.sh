@@ -1719,7 +1719,7 @@ shListUnflattenAndApply() {(set -e
 shMain() {
 # this function will run the main program
     export UTILITY2_DEPENDENTS="apidoc-lite
-        cron
+        cron1
         db-lite
         electron-lite
         istanbul-lite
