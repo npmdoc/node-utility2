@@ -1275,6 +1275,18 @@ shGithubRepoBaseCreate() {(set -e
     shGithubPush --all "https://github.com/$GITHUB_REPO.git" || true
 )}
 
+shGithubRepoListTouch() {(set -e
+# this function will touch the $GITHUB_REPO $LIST with the $CI_COMMIT_MESSAGE
+    LIST="$1"
+    CI_COMMIT_MESSAGE="$2"
+    LIST2=""
+    for GITHUB_REPO in $LIST
+    do
+        LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
+    done
+    utility2-github-crud touchList "$LIST2" "$CI_COMMIT_MESSAGE"
+)}
+
 shGrep() {(set -e
 # this function will recursively grep $DIR for the $REGEXP
     DIR="$1"
@@ -1678,6 +1690,8 @@ shListUnflattenAndApply() {(set -e
     shift
     GROUP="$1"
     shift
+    COMMAND="$1"
+    shift
     LIST2=""
     II=0
     for ELEMENT in $LIST
@@ -1691,14 +1705,14 @@ shListUnflattenAndApply() {(set -e
         II="$((II+1))"
         if [ "$II" -ge "$GROUP" ]
         then
-            $* "$LIST2"
+            "$COMMAND" "$LIST2" $*
             II=0
             LIST2=""
         fi
     done
     if [ "$LIST2" ]
     then
-        $* "$LIST2"
+        "$COMMAND" "$LIST2" $*
     fi
 )}
 
@@ -1949,28 +1963,6 @@ shNpmPublish() {(set -e
         ;;
     esac
     shNpmPublishAlias $*
-)}
-
-shNpmPublishListAfterCommit() {(set -e
-# this function will npm-publish the $GITHUB_REPO $LIST after commit
-    LIST="$1"
-    LIST2=""
-    for GITHUB_REPO in $LIST
-    do
-        LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
-    done
-    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommit]'
-)}
-
-shNpmPublishListAfterCommitAfterBuild() {(set -e
-# this function will npm-publish the $GITHUB_REPO $LIST after commit after build
-    LIST="$1"
-    LIST2=""
-    for GITHUB_REPO in $LIST
-    do
-        LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
-    done
-    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommitAfterBuild]'
 )}
 
 shNpmPublishAlias() {(set -e
@@ -2714,14 +2706,6 @@ shTravisHookListGetJson() {(set -e
     curl -H "Authorization: token $TRAVIS_ACCESS_TOKEN" -fs \
         "https://api.travis-ci.org/hooks?$1"
 )}
-
-#!! shTravisHookListGetNotPassing() {(set -e
-#!! # this function will get the not-passing-list of travis-repos with the search paramters $1
-    #!! LIST="$(shTravisHookListGetJson $*)"
-    #!! node -e "console.log($(shTravisHookListGetJson $*).map(function (element) {
-        #!! return element.uid.replace(':', '/');
-    #!! }).join(' '));"
-#!! )}
 
 shTravisRepoIdGet() {(set -e
 # this function will get the id for the travis-repo $1
