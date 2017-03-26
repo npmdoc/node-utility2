@@ -210,6 +210,8 @@ shBuildCi() {(set -e
     beta)
         shBuildCiInternal
         ;;
+    cron)
+        ;;
     master)
         shBuildCiInternal
         ;;
@@ -254,7 +256,7 @@ shBuildCi() {(set -e
             git add .
             shFilePackageJsonVersionIncrement
             git commit -am "[npm publishAfterCommit]"
-            shGithubPush "https://github.com/$GITHUB_REPO.git" HEAD:alpha
+            shGithubPush -f "https://github.com/$GITHUB_REPO.git" HEAD:alpha
             ;;
         esac
         ;;
@@ -596,7 +598,7 @@ shDockerNpmRestart() {(set -e
 shDockerRestart() {(set -e
 # this function will restart the docker-container
     docker rm -fv "$1" || true
-    shDockerStart "$@"
+    shDockerStart $*
 )}
 
 shDockerRestartElasticsearch() {(set -e
@@ -764,8 +766,8 @@ shDockerRestartTransmission() {(set -e
 )}
 
 shDockerRm() {(set -e
-# this function will rm the docker-containers $@
-    docker rm -fv "$@" || true
+# this function will rm the docker-containers $*
+    docker rm -fv $* || true
 )}
 
 shDockerRmAll() {(set -e
@@ -799,7 +801,7 @@ shDockerSh() {(set -e
 )}
 
 shDockerStart() {(set -e
-# this function will start the docker-container $IMAGE:$NAME with the command $@
+# this function will start the docker-container $IMAGE:$NAME with the command $*
     case "$(uname)" in
     Linux)
         LOCALHOST="${LOCALHOST:-127.0.0.1}"
@@ -820,7 +822,7 @@ shDockerStart() {(set -e
     docker run --name "$NAME" -dt -e debian_chroot="$NAME" \
         -v "$DOCKER_ROOT:/root" \
         $DOCKER_OPTIONS \
-        "$IMAGE" "$@"
+        "$IMAGE" $*
 )}
 
 shDuList() {(set -e
@@ -1123,7 +1125,7 @@ shGitGc() {(set -e
         -c gc.rerereresolved=0 \
         -c gc.rerereunresolved=0 \
         -c gc.pruneExpire=now \
-        gc "$@"
+        gc
 )}
 
 shGitInfo() {(set -e
@@ -1224,7 +1226,7 @@ shGithubPush() {(set -e
         printf "https://nobody:$GITHUB_TOKEN@github.com\n" > .git/tmp
     fi
     shBuildPrint "git push $*"
-    git push $@ || EXIT_CODE=$?
+    git push $* || EXIT_CODE=$?
     # security - cleanup github-authentication
     rm -f .git/tmp
     return "$EXIT_CODE"
@@ -1655,19 +1657,49 @@ shIptablesInit() {(set -e
 )}
 
 shIstanbulCover() {(set -e
-# this function will run the command $@ with istanbul-coverage
+# this function will run the command $* with istanbul-coverage
     export NODE_BINARY="${NODE_BINARY:-node}"
     if [ ! "$npm_config_mode_coverage" ]
     then
-        $NODE_BINARY "$@"
+        "$NODE_BINARY" $*
         return
     fi
-    $NODE_BINARY $npm_config_dir_utility2/lib.istanbul.js cover "$@"
+    "$NODE_BINARY" "$npm_config_dir_utility2/lib.istanbul.js" cover $*
 )}
 
 shKillallElectron() {(set -e
 # this function will killall electron
     killall Electron electron
+)}
+
+shListUnflattenAndApply() {(set -e
+# this function will unflatten the list and apply it to $*
+    LIST="$1"
+    shift
+    GROUP="$1"
+    shift
+    LIST2=""
+    II=0
+    for ELEMENT in $LIST
+    do
+        if [ "$LIST2" ]
+        then
+            LIST2="$LIST2 $ELEMENT"
+        else
+            LIST2="$ELEMENT"
+        fi
+        II="$((II+1))"
+        if [ "$II" -ge "$GROUP" ]
+        then
+            $* "$LIST2"
+            II=0
+            LIST2=""
+        fi
+    done
+    if [ "$LIST2" ]
+    then
+        $* "$LIST2"
+    fi
 )}
 
 shMain() {
@@ -1697,7 +1729,7 @@ shMain() {
         [ "$COMMAND" = browserTest ]
     then
         shInitNpmConfigDirUtility2
-        "$npm_config_dir_utility2/lib.utility2.js" "$COMMAND" "$@"
+        "$npm_config_dir_utility2/lib.utility2.js" "$COMMAND" $*
         return
     fi
     case "$COMMAND" in
@@ -1716,11 +1748,11 @@ shMain() {
         export npm_config_mode_auto_restart=1
         export npm_config_mode_start="$MODE_START"
         shInit
-        shRun shIstanbulCover "$FILE" "$@"
+        shRun shIstanbulCover "$FILE" $*
         ;;
     test)
         shInit
-        shNpmTest "$@"
+        shNpmTest $*
         ;;
     utility2Dirname)
         shInitNpmConfigDirUtility2
@@ -1728,7 +1760,7 @@ shMain() {
         ;;
     *)
         shInit
-        "$COMMAND" "$@"
+        "$COMMAND" $*
         ;;
     esac
 )}
@@ -1916,7 +1948,18 @@ shNpmPublish() {(set -e
         exit
         ;;
     esac
-    shNpmPublishAlias $@
+    shNpmPublishAlias $*
+)}
+
+shNpmPublishListAfterCommitAfterBuild() {(set -e
+# this function will npm-publish the $GITHUB_REPO $LIST after commit after build
+    LIST="$1"
+    LIST2=""
+    for GITHUB_REPO in $LIST
+    do
+        LIST2="$LIST2 https://github.com/$GITHUB_REPO/blob/alpha/package.json"
+    done
+    utility2-github-crud touchList "$LIST2" '[npm publishAfterCommit]' &
 )}
 
 shNpmPublishAlias() {(set -e
@@ -1996,17 +2039,17 @@ shNpmTest() {(set -e
     # run npm-test without coverage
     if [ ! "$npm_config_mode_coverage" ]
     then
-        (eval $NODE_BINARY "$@") || EXIT_CODE=$?
+        (eval "$NODE_BINARY" $*) || EXIT_CODE=$?
     # run npm-test with coverage
     else
         # cleanup old coverage
         rm -f "$npm_config_dir_build/coverage.html/"coverage.*.json
         # run npm-test with coverage
-        (eval shIstanbulCover "$@") || EXIT_CODE=$?
+        (eval shIstanbulCover $*) || EXIT_CODE=$?
         # if $EXIT_CODE != 0, then debug covered-test by re-running it uncovered
         if [ "$EXIT_CODE" != 0 ] && [ "$EXIT_CODE" != 130 ]
         then
-            npm_config_mode_coverage="" $NODE_BINARY "$@" || true
+            npm_config_mode_coverage="" "$NODE_BINARY" $* || true
         fi
     fi
     # create test-report artifacts
@@ -2053,32 +2096,6 @@ shNpmTestPublishedList() {(set -e
     for NAME in $LIST
     do
         shNpmTestPublished "$NAME"
-    done
-)}
-
-shListUnflattenAndApply() {(set -e
-# this function will unflatten the list and apply it to $@
-    LIST="$1"
-    shift
-    GROUP="$1"
-    shift
-    LIST2=""
-    II=0
-    for ELEMENT in $LIST
-    do
-        if [ "$LIST2" ]
-        then
-            LIST2="$LIST2 $ELEMENT"
-        else
-            LIST2="$ELEMENT"
-        fi
-        II="$((II+1))"
-        if [ "$II" -ge "$GROUP" ]
-        then
-            $* "$LIST2"
-            II=0
-            LIST2=""
-        fi
     done
 )}
 
@@ -2383,7 +2400,7 @@ shRmDsStore() {(set -e
 )}
 
 shRun() {(set -e
-# this function will run the command $@ with auto-restart
+# this function will run the command $* with auto-restart
     EXIT_CODE=0
     # eval argv and auto-restart on non-zero exit-code, unless exited by SIGINT
     if [ "$npm_config_mode_auto_restart" ] && [ ! "$npm_config_mode_auto_restart_child" ]
@@ -2392,7 +2409,7 @@ shRun() {(set -e
         while true
         do
             printf "(re)starting $*\n"
-            (eval "$@") || EXIT_CODE=$?
+            (eval $*) || EXIT_CODE=$?
             printf "process exited with code $EXIT_CODE\n"
             # http://en.wikipedia.org/wiki/Unix_signal
             # if $EXIT_CODE != 77, then exit process
@@ -2407,18 +2424,18 @@ shRun() {(set -e
         return "$EXIT_CODE"
     # eval argv
     else
-        "$@"
+        $*
     fi
 )}
 
 shRunScreenCapture() {(set -e
 # http://www.cnx-software.com/2011/09/22
 # /how-to-convert-a-command-line-result-into-an-image-in-linux/
-# this function will run the command $@ and screen-capture the output
+# this function will run the command $* and screen-capture the output
     EXIT_CODE=0
     export MODE_BUILD_SCREEN_CAPTURE="screen-capture.${MODE_BUILD:-undefined}.svg"
     (printf "0" > "$npm_config_file_tmp"
-        (eval shRun "$@" 2>&1) ||
+        (eval shRun $* 2>&1) ||
         printf $? > "$npm_config_file_tmp") | tee "$npm_config_dir_tmp/screen-capture.txt"
     EXIT_CODE="$(cat "$npm_config_file_tmp")"
     shBuildPrint "EXIT_CODE - $EXIT_CODE"
@@ -2520,10 +2537,10 @@ shSource() {
 }
 
 shSshReverseTunnel() {
-# this function will ssh $@ with reverse-tunneling
+# this function will ssh $* with reverse-tunneling
     ssh -R 2022:127.0.0.1:22 \
         -R 3022:127.0.0.1:2022 \
-        $@ || return $?
+        $* || return $?
 }
 
 shTestReportCreate() {(set -e
@@ -2657,6 +2674,44 @@ YjZiMmIwNjYyY2E0OGI5YjQ4ZmI3YTdkYmU4NjViN2I=I93wn43H8K4/eB5Wvi6A2irUFGh17rfCMer3
     eval "$(shTravisCryptoAesDecryptYml)" || return $?
 }
 
+shTravisHookListGet() {(set -e
+# this function will get the list of travis-repos with the search paramters $1
+# https://docs.travis-ci.com/api#repositories
+# Parameter - Default - Description
+# ids - "" - list of repository ids to fetch, cannot be combined with other parameters
+# member - "" - filter by user that has access to it (github login)
+# owner_name - "" - filter by owner name (first segment of slug)
+# slug - "" - filter by slug
+# search - "" - filter by search term
+# active - false - if true, will only return repositories that are enabled
+    LIST="$(shTravisHookListGetJson $*)"
+    node -e "console.log($(shTravisHookListGetJson $*).map(function (element) {
+        return element.uid.replace(':', '/');
+    }).join(' '));"
+)}
+
+shTravisHookListGetJson() {(set -e
+# this function will get the json-list of travis-repos with the search paramters $1
+# https://docs.travis-ci.com/api#repositories
+# Parameter - Default - Description
+# ids - "" - list of repository ids to fetch, cannot be combined with other parameters
+# member - "" - filter by user that has access to it (github login)
+# owner_name - "" - filter by owner name (first segment of slug)
+# slug - "" - filter by slug
+# search - "" - filter by search term
+# active - false - if true, will only return repositories that are enabled
+    curl -H "Authorization: token $TRAVIS_ACCESS_TOKEN" -fs \
+        "https://api.travis-ci.org/hooks?$1"
+)}
+
+#!! shTravisHookListGetNotPassing() {(set -e
+#!! # this function will get the not-passing-list of travis-repos with the search paramters $1
+    #!! LIST="$(shTravisHookListGetJson $*)"
+    #!! node -e "console.log($(shTravisHookListGetJson $*).map(function (element) {
+        #!! return element.uid.replace(':', '/');
+    #!! }).join(' '));"
+#!! )}
+
 shTravisRepoIdGet() {(set -e
 # this function will get the id for the travis-repo $1
     node -e "try { console.log(
@@ -2759,8 +2814,27 @@ shTravisRepoListCreate() {(set -e
 
 shTravisRepoListGet() {(set -e
 # this function will get the list of travis-repos for the given $TRAVIS_ACCESS_TOKEN
+    shTravisRepoListGetJson "$1"
+)}
+
+shTravisRepoListGetJson() {(set -e
+# this function will get the list of travis-repos for the given $TRAVIS_ACCESS_TOKEN
+# https://docs.travis-ci.com/api#repositories
+# Parameter - Default - Description
+# ids - "" - list of repository ids to fetch, cannot be combined with other parameters
+# member - "" - filter by user that has access to it (github login)
+# owner_name - "" - filter by owner name (first segment of slug)
+# slug - "" - filter by slug
+# search - "" - filter by search term
+# active - false - if true, will only return repositories that are enabled
     curl -H "Authorization: token $TRAVIS_ACCESS_TOKEN" -fs \
-        "https://api.travis-ci.org/hooks?owner_name=npmdoc"
+        "https://api.travis-ci.org/repos?$1"
+)}
+
+shTravisTaskRun() {(set -e
+# this function will push the shell-task $1 to travis
+    utility2-github-crud put https://github.com/kaizhu256/node-utility2/blob/task/.task.sh \
+        "$1" '[$ /bin/sh .task.sh]'
 )}
 
 shUbuntuInit() {
@@ -3007,4 +3081,4 @@ shXvfbStart() {
     (Xvfb "$DISPLAY" &) 2>/dev/null || true
 }
 
-shMain "$@"
+shMain $*

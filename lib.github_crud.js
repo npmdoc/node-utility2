@@ -470,6 +470,25 @@
             options.modeNext = 0;
             options.onNext();
         };
+
+        local.contentTouchList = function (options, onError) {
+        /*
+         * this function will touch options.urlList in parallel
+         * https://developer.github.com/v3/repos/contents/#update-a-file
+         */
+            var onParallel;
+            onParallel = local.onParallel(onError);
+            onParallel.counter += 1;
+            options.urlList.forEach(function (url) {
+                onParallel.counter += 1;
+                local.contentTouch({
+                    message: options.message,
+                    modeErrorIgnore: true,
+                    url: url
+                }, onParallel);
+            });
+            onParallel();
+        };
         break;
     }
     switch (local.modeJs) {
@@ -519,11 +538,22 @@
                 console.assert(!error, error);
             });
             break;
-        // touch
+        // touch file
         case 'touch':
             local.contentTouch({
                 message: process.argv[4],
                 url: process.argv[3]
+            }, function (error) {
+                // validate no error occurred
+                console.assert(!error, error);
+            });
+            break;
+        case 'touchlist':
+            local.contentTouchList({
+                message: process.argv[4],
+                urlList: process.argv[3].split(' ').filter(function (element) {
+                    return element;
+                })
             }, function (error) {
                 // validate no error occurred
                 console.assert(!error, error);
