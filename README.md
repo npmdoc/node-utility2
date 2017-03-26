@@ -834,6 +834,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     npm install "kaizhu256/node-utility2#alpha" && \
     cp -a node_modules / && \
     cd node_modules/utility2 && \
+    npm install && \
     export DISPLAY=:99.0 && \
     (Xvfb "$DISPLAY" &) && \
     npm test
