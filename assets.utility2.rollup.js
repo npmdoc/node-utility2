@@ -1080,7 +1080,7 @@ local.templateApidocMd = '\
             };
         };
 
-        local.onParallel = function (onError, onDebug) {
+        local.onParallel = function (onError, onEach) {
         /*
          * this function will create a function that will
          * 1. run async tasks in parallel
@@ -1088,9 +1088,9 @@ local.templateApidocMd = '\
          */
             var self;
             onError = local.onErrorWithStack(onError);
-            onDebug = onDebug || local.nop;
+            onEach = onEach || local.nop;
             self = function (error) {
-                onDebug(error, self);
+                onEach(error, self);
                 // if previously counter === 0 or error occurred, then return
                 if (self.counter === 0 || self.error) {
                     return;
@@ -1112,6 +1112,18 @@ local.templateApidocMd = '\
             self.counter = 0;
             // return callback
             return self;
+        };
+
+        local.setTimeoutOnError = function (onError, error, data) {
+        /*
+         * this function will asynchronously call onError
+         */
+            if (typeof onError === 'function') {
+                setTimeout(function () {
+                    onError(error, data);
+                });
+            }
+            return data;
         };
     }());
 
@@ -1707,6 +1719,16 @@ local.templateApidocMd = '\
             ));
         };
 
+        local._DbTable.prototype.crudGetOneByRandom = function (onError) {
+        /*
+         * this function will get a random dbRow in the dbTable
+         */
+            this._cleanup();
+            return local.setTimeoutOnError(onError, null, local.dbRowProject(
+                this.dbRowList[Math.floor(Math.random() * this.dbRowList.length)]
+            ));
+        };
+
         local._DbTable.prototype.crudGetOneByQuery = function (query, onError) {
         /*
          * this function will get the dbRow in the dbTable with the given query
@@ -1988,7 +2010,7 @@ local.templateApidocMd = '\
          * this function will import the serialized text into the db
          */
             var dbTable;
-            text.replace((/^(\w\S*?) (\S+?) (\S+?)$/gm), function (
+            text.replace((/^(\w\S*?) (\S+?) (\S.+?)$/gm), function (
                 match0,
                 match1,
                 match2,
@@ -2331,18 +2353,6 @@ local.templateApidocMd = '\
 
         local.dbTableDict = {};
 
-        local.setTimeoutOnError = function (onError, error, data) {
-        /*
-         * this function will asynchronously call onError
-         */
-            if (typeof onError === 'function') {
-                setTimeout(function () {
-                    onError(error, data);
-                });
-            }
-            return data;
-        };
-
         local.sortCompare = function (aa, bb) {
         /*
          * this function will compare aa vs bb and return:
@@ -2584,7 +2594,7 @@ local.templateApidocMd = '\
             return options;
         };
 
-        local.onParallel = function (onError, onDebug) {
+        local.onParallel = function (onError, onEach) {
         /*
          * this function will create a function that will
          * 1. run async tasks in parallel
@@ -2592,9 +2602,9 @@ local.templateApidocMd = '\
          */
             var self;
             onError = local.onErrorWithStack(onError);
-            onDebug = onDebug || local.nop;
+            onEach = onEach || local.nop;
             self = function (error) {
-                onDebug(error, self);
+                onEach(error, self);
                 // if previously counter === 0 or error occurred, then return
                 if (self.counter === 0 || self.error) {
                     return;
@@ -13078,7 +13088,7 @@ header: '\
             return options;
         };
 
-        local.onParallel = function (onError, onDebug) {
+        local.onParallel = function (onError, onEach) {
         /*
          * this function will create a function that will
          * 1. run async tasks in parallel
@@ -13086,9 +13096,10 @@ header: '\
          */
             var self;
             onError = local.onErrorWithStack(onError);
-            onDebug = onDebug || local.nop;
+            onEach = onEach || local.nop;
             self = function (error) {
-                onDebug(error, self);
+                self.current += 1;
+                onEach(error, self);
                 // if previously counter === 0 or error occurred, then return
                 if (self.counter === 0 || self.error) {
                     return;
@@ -13108,8 +13119,35 @@ header: '\
             };
             // init counter
             self.counter = 0;
+            self.current = 0;
             // return callback
             return self;
+        };
+
+        local.onParallelList = function (options, onEach, onError) {
+        /*
+         * this function will run onEach on options.list in parallel
+         */
+            var inParallel, onParallel;
+            onParallel = local.onParallel(onError, function (error, data) {
+                if (error) {
+                    onError(error, data);
+                    return;
+                }
+                while (options.list.length && inParallel < options.inParallelLimit) {
+                    onEach(options.list.shift(), onParallel);
+                }
+            });
+            onParallel.counter += 1;
+            local.objectSetDefault(options, {
+                inParallelLimit: Infinity
+            });
+            inParallel = 0;
+            onParallel.counter += options.list.length;
+            while (options.list.length && inParallel < options.inParallelLimit) {
+                onEach(options.list.shift(), onParallel);
+            }
+            onParallel();
         };
 
         local.onReadyAfter = function (onError) {
@@ -14550,6 +14588,96 @@ instruction\n\
             options = local.timeElapsedStart(options);
             options.timeElapsed = Date.now() - options.timeStart;
             return options;
+        };
+
+        local.dbTableTravisRepoCreate = function (options, onError) {
+        /*
+         * this function will create a persistent dbTableTravisRepo
+         */
+            options = local.objectSetDefault(options, {
+                idIndexCreateList: [{ name: 'githubRepo' }],
+                name: 'TravisRepo'
+            });
+            local.dbTableTravisRepo = local.db.dbTableCreateOne(options, onError);
+            return local.dbTableTravisRepo;
+        };
+
+        local.dbTableTravisRepoUpdate = function (options, onError) {
+        /*
+         * this function will update dbTableTravisRepo
+         */
+            var self;
+            options = local.objectSetDefault(options, {
+                inParallelLimit: 4,
+                queryLimit: 256
+            });
+            local.onNext(options, function (error, data) {
+                switch (options.modeNext) {
+                case 1:
+                    self = local.dbTableTravisRepo =
+                        local.dbTableTravisRepoCreate(options, options.onNext);
+                    break;
+                case 2:
+                    self = local.dbTableTravisRepo = data;
+                    local.ajax({
+                        headers: { Authorization: 'token ' + local.env.TRAVIS_ACCESS_TOKEN },
+                        url: 'https://api.travis-ci.org/hooks'
+                    }, options.onNext);
+                    break;
+                case 3:
+                    // validate no error occurred
+                    local.assert(!error, error);
+                    data = JSON.parse(data.responseText).map(function (dbRow) {
+                        dbRow.githubRepo = dbRow.uid.replace(':', '/');
+                        return dbRow;
+                    });
+                    self.crudUpdateManyById(data);
+                    data = self.crudGetManyByQuery({
+                        sort: [{ fieldName: 'last_build_started_at' }],
+                        limit: options.queryLimit
+                    });
+                    local.onParallelList({
+                        inParallelLimit: options.inParallelLimit,
+                        list: data
+                    }, function (dbRow, onParallel) {
+                        local.ajax({
+                            headers: {
+                                Authorization: 'token ' + local.env.TRAVIS_ACCESS_TOKEN
+                            },
+                            url: 'https://api.travis-ci.org/repos/' + dbRow.githubRepo
+                        }, function (error, data) {
+                            // validate no error occurred
+                            local.assert(!error, error);
+                            data = JSON.parse(data.responseText);
+                            data.githubRepo = dbRow.githubRepo;
+                            self.crudUpdateOneById(data);
+                            if (onParallel.current % 100 === 0 || onParallel.counter === 1) {
+                                console.error('dbTableTravisRepoUpdate - updated ' +
+                                    onParallel.current + ' dbRows');
+                            }
+                            onParallel();
+                        });
+                    }, options.onNext);
+                    break;
+                default:
+                    local.setTimeoutOnError(onError, error, self);
+                }
+            });
+            options.modeNext = 0;
+            options.onNext();
+            return self;
+        };
+
+        local.setTimeoutOnError = function (onError, error, data) {
+        /*
+         * this function will asynchronously call onError
+         */
+            if (typeof onError === 'function') {
+                setTimeout(function () {
+                    onError(error, data);
+                });
+            }
+            return data;
         };
 
         local.tryCatchOnError = function (fnc, onError) {

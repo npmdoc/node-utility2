@@ -245,7 +245,7 @@
             };
         };
 
-        local.onParallel = function (onError, onDebug) {
+        local.onParallel = function (onError, onEach) {
         /*
          * this function will create a function that will
          * 1. run async tasks in parallel
@@ -253,9 +253,9 @@
          */
             var self;
             onError = local.onErrorWithStack(onError);
-            onDebug = onDebug || local.nop;
+            onEach = onEach || local.nop;
             self = function (error) {
-                onDebug(error, self);
+                onEach(error, self);
                 // if previously counter === 0 or error occurred, then return
                 if (self.counter === 0 || self.error) {
                     return;
@@ -277,6 +277,18 @@
             self.counter = 0;
             // return callback
             return self;
+        };
+
+        local.setTimeoutOnError = function (onError, error, data) {
+        /*
+         * this function will asynchronously call onError
+         */
+            if (typeof onError === 'function') {
+                setTimeout(function () {
+                    onError(error, data);
+                });
+            }
+            return data;
         };
     }());
 
@@ -872,6 +884,16 @@
             ));
         };
 
+        local._DbTable.prototype.crudGetOneByRandom = function (onError) {
+        /*
+         * this function will get a random dbRow in the dbTable
+         */
+            this._cleanup();
+            return local.setTimeoutOnError(onError, null, local.dbRowProject(
+                this.dbRowList[Math.floor(Math.random() * this.dbRowList.length)]
+            ));
+        };
+
         local._DbTable.prototype.crudGetOneByQuery = function (query, onError) {
         /*
          * this function will get the dbRow in the dbTable with the given query
@@ -1153,7 +1175,7 @@
          * this function will import the serialized text into the db
          */
             var dbTable;
-            text.replace((/^(\w\S*?) (\S+?) (\S+?)$/gm), function (
+            text.replace((/^(\w\S*?) (\S+?) (\S.+?)$/gm), function (
                 match0,
                 match1,
                 match2,
@@ -1495,18 +1517,6 @@
         };
 
         local.dbTableDict = {};
-
-        local.setTimeoutOnError = function (onError, error, data) {
-        /*
-         * this function will asynchronously call onError
-         */
-            if (typeof onError === 'function') {
-                setTimeout(function () {
-                    onError(error, data);
-                });
-            }
-            return data;
-        };
 
         local.sortCompare = function (aa, bb) {
         /*

@@ -762,6 +762,26 @@
             onError();
         };
 
+        //!! local.testCase_listUnflattenOnSeries_default = function (options, onError) {
+        //!! /*
+         //!! * this function will test listUnflattenOnSeries's default handling-behavior
+         //!! */
+            //!! options = {};
+            //!! options.data = [];
+            //!! local.listUnflattenOnSeries([1, 2, 3, 4, 5], -1, function (subList, onNext) {
+                //!! options.data.push(subList);
+                //!! onNext();
+            //!! }, local.onErrorThrow);
+            //!! local.assertJsonEqual(options.data, [[1], [2], [3], [4], [5]]);
+            //!! options.data = [];
+            //!! local.listUnflattenOnSeries([1, 2, 3, 4, 5], 2, function (subList, onNext) {
+                //!! options.data.push(subList);
+                //!! onNext();
+            //!! }, local.onErrorThrow);
+            //!! local.assertJsonEqual(options.data, [[1, 2], [3, 4], [5]]);
+            //!! onError();
+        //!! };
+
         local.testCase_normalizeXxx_default = function (options, onError) {
         /*
          * this function will test normalizeXxx's default handling-behavior
@@ -1020,7 +1040,7 @@
             var onParallel, onParallelError;
             // jslint-hack
             local.nop(options);
-            // test onDebug handling-behavior
+            // test onEach handling-behavior
             onParallel = local.onParallel(onError, function (error, self) {
                 // validate no error occurred
                 local.assert(!error, error);

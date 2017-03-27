@@ -45,9 +45,10 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 #### changes for v2017.3.22
 - add npm-package badge to npmdoc
 - add branch-cron
+- add function dbTableTravisRepoCreate and dbTableTravisRepoUpdate
 - add github-crud function contentTouchList
 - add shell-function shGitRemotePromote to auto-promote branches alpha -> beta -> master
-- add shell-function shGithubRepoListTouch and shListUnflattenAndApply
+- add shell-function shGithubRepoListTouch, shListUnflattenAndApply, and shNpmInstallWithPeerDependencies
 - deprecate ssh-key in favor of github oauth - https://stackoverflow.com/questions/18027115/committing-via-travis-ci-failing
 - enable shNpmdocRepoListCreate in travis-ci
 - enhance shell-function shNpmPackageListingCreate to add total package-size to package-listing
@@ -755,7 +756,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         curl && \
     (busybox --list | xargs -n1 /bin/sh -c 'ln -s /bin/busybox /bin/$0 2>/dev/null' || true) \
         && \
-    curl -sL https://deb.nodesource.com/setup_6.x | /bin/bash - && \
+    curl -#L https://deb.nodesource.com/setup_6.x | /bin/bash - && \
     apt-get install -y nodejs
 # install electron-lite
 VOLUME [ \
@@ -786,19 +787,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         vim
 ```
 
-- Dockerfile.elasticsearch
-```shell
-# Dockerfile.elasticsearch
-FROM kaizhu256/node-utility2:latest
-MAINTAINER kai zhu <kaizhu256@gmail.com>
-# install swagger-ui
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    rm -fr /swagger-ui && \
-    git clone --branch=v2.1.5 --single-branch \
-        https://github.com/swagger-api/swagger-ui.git && \
-    mv swagger-ui/dist /swagger-ui
-```
-
 - Dockerfile.emscripten
 ```shell
 # Dockerfile.emscripten
@@ -827,6 +815,15 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # Dockerfile.latest
 FROM kaizhu256/node-utility2:base
 MAINTAINER kai zhu <kaizhu256@gmail.com>
+# install utility2
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    npm install "kaizhu256/node-utility2#alpha" && \
+    cp -a node_modules / && \
+    cd node_modules/utility2 && \
+    npm install && \
+    export DISPLAY=:99.0 && \
+    (Xvfb "$DISPLAY" &) && \
+    npm test
 # install elasticsearch and kibana
 RUN export DEBIAN_FRONTEND=noninteractive && \
     mkdir -p /usr/share/man/man1 && \

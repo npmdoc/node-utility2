@@ -295,6 +295,40 @@ shBuildCi() {(set -e
         rm "$HOME/.npmrc"
         ;;
     esac
+    # docker build
+    docker --version 2>/dev/null || return
+    export DOCKER_TAG="$(printf "$CI_BRANCH" | sed -e "s/docker.//")"
+    # if $DOCKER_TAG is not unique from $CI_BRANCH, then return
+    if [ "$DOCKER_TAG" = "$CI_BRANCH" ]
+    then
+        return
+    fi
+    # docker build
+    docker build -f "tmp/README.Dockerfile.$DOCKER_TAG" -t "$GITHUB_REPO:$DOCKER_TAG" .
+    # docker test
+    case "$CI_BRANCH" in
+    docker.base)
+        # npm test utility2
+        for PACKAGE in utility2 "kaizhu256/node-utility2#alpha"
+        do
+            docker run "$GITHUB_REPO:$DOCKER_TAG" /bin/bash -c "set -e
+                curl https://raw.githubusercontent.com\
+/kaizhu256/node-utility2/alpha/lib.utility2.sh > /tmp/lib.utility2.sh
+                . /tmp/lib.utility2.sh
+                npm install '$PACKAGE'
+                cd node_modules/utility2
+                shBuildInsideDocker
+            "
+        done
+        ;;
+    esac
+    # https://docs.travis-ci.com/user/docker/#Pushing-a-Docker-Image-to-a-Registry
+    # docker push
+    if [ "$DOCKER_PASSWORD" ]
+    then
+        docker login -p="$DOCKER_PASSWORD" -u="$DOCKER_USERNAME"
+        docker push "$GITHUB_REPO:$DOCKER_TAG"
+    fi
 )}
 
 shBuildCiInternal() {(set -e
@@ -736,8 +770,8 @@ server {
 )}
 
 shDockerRestartTransmission() {(set -e
-# this function will restart the transmission docker-container
 # http://transmission:transmission@127.0.0.1:9091
+# this function will restart the transmission docker-container
     case "$(uname)" in
     Linux)
         LOCALHOST="${LOCALHOST:-127.0.0.1}"
@@ -1719,7 +1753,7 @@ shListUnflattenAndApply() {(set -e
 shMain() {
 # this function will run the main program
     export UTILITY2_DEPENDENTS="apidoc-lite
-        cron
+        cron1
         db-lite
         electron-lite
         istanbul-lite
@@ -1919,6 +1953,49 @@ shNpmDeprecateAliasList() {(set -e
     done
 )}
 
+shNpmInstallWithPeerDependencies() {(set -e
+# this function will run npm-install $* with peer-dependencies auto-installed
+    shPasswordEnvUnset
+    npm install $* | tee /tmp/npmInstallWithPeerDependencies
+    eval "$(node -e "
+// <script>
+/*jslint
+    bitwise: true,
+    browser: true,
+    maxerr: 8,
+    maxlen: 96,
+    node: true,
+    nomen: true,
+    regexp: true,
+    stupid: true
+*/
+'use strict';
+var local;
+local = {};
+local.dict = {};
+local.file = '/tmp/npmInstallWithPeerDependencies';
+local.fs = require('fs');
+local.nop = function () {
+    return;
+};
+local.rgx = (/ UNMET PEER DEPENDENCY (\S+)/g);
+local.fs.readFileSync(local.file, 'utf8').replace(local.rgx, function (match0, match1) {
+    // jslint-hack
+    local.nop(match0);
+    match1 = match1.split('@');
+    match1[1] = (match1[1] || '*').split(' ')[0];
+    local.dict[match1[0]] = local.dict[match1[0]] || match1[1];
+});
+Object.keys(local.dict).forEach(function (key) {
+    console.error('npm install ' + key + '@' + local.dict[key]);
+    console.log('npm install ' + key + '@' + local.dict[key]);
+});
+console.log('true');
+// </script>
+    ")"
+    npm install $*
+)}
+
 shNpmPackageListingCreate() {(set -e
 # this function will create a svg listing of the npm-package
     cd "$1"
@@ -2103,8 +2180,8 @@ shNpmTestPublishedList() {(set -e
 )}
 
 shNpmdocRepoListCreate() {(set -e
-# this function will create and push the npmdoc-repo npmdoc/node-npmdoc-$LIST[ii]
 # https://docs.travis-ci.com/api
+# this function will create and push the npmdoc-repo npmdoc/node-npmdoc-$LIST[ii]
     sleep 1
     EXIT_CODE=0
     export MODE_BUILD=shTravisRepoListCreate
@@ -2243,14 +2320,16 @@ shReadmeBuildLinkVerify() {(set -e
 'use strict';
 var local;
 local = {};
+local.file = 'README.md';
 local.fs = require('fs');
 local.nop = function () {
     return;
 };
-local.fs.readFileSync('README.md', 'utf8').replace(new RegExp(
+local.rgx = new RegExp(
     '$GITHUB_REPO'.replace('/', '.github.io\\\\/') + '\\\\/build\\\\b.*?\\\\/(.*?)[)\\\\]]',
     'g'
-), function (match0, match1) {
+);
+local.fs.readFileSync(local.file, 'utf8').replace(local.rgx, function (match0, match1) {
     if (!local.fs.existsSync('$npm_config_dir_build/' + match1)) {
         throw new Error('shReadmeBuildLinkVerify - invalid link - https://' + match0);
     }
@@ -2268,6 +2347,7 @@ shReadmeTest() {(set -e
         then
             shBuildApp
         fi
+        shNpmInstallWithPeerDependencies "$npm_package_buildNpmdoc"
         shBuildNpmdoc
         shBuildCi
         return
@@ -2315,11 +2395,13 @@ shReadmeTest() {(set -e
 'use strict';
 var local;
 local = {};
+local.file = '$FILE';
 local.fs = require('fs');
 local.nop = function () {
     return;
 };
-local.fs.readFileSync('$FILE', 'utf8').replace((/\n *\\$ (.*)/), function (match0, match1) {
+local.rgx = (/\n *\\$ (.*)/);
+local.fs.readFileSync(local.file, 'utf8').replace(local.rgx, function (match0, match1) {
     // jslint-hack
     local.nop(match0);
     console.log(match1);
@@ -2437,9 +2519,11 @@ shRunScreenCapture() {(set -e
 # this function will run the command $* and screen-capture the output
     EXIT_CODE=0
     export MODE_BUILD_SCREEN_CAPTURE="screen-capture.${MODE_BUILD:-undefined}.svg"
-    (printf "0" > "$npm_config_file_tmp"
-        (eval shRun $* 2>&1) ||
-        printf $? > "$npm_config_file_tmp") | tee "$npm_config_dir_tmp/screen-capture.txt"
+    (
+        printf "0" > "$npm_config_file_tmp"
+        (eval shRun $* 2>&1)
+        printf $? > "$npm_config_file_tmp"
+    ) | tee "$npm_config_dir_tmp/screen-capture.txt"
     EXIT_CODE="$(cat "$npm_config_file_tmp")"
     shBuildPrint "EXIT_CODE - $EXIT_CODE"
     [ "$EXIT_CODE" = 0 ] || return "$EXIT_CODE"
@@ -2572,37 +2656,6 @@ require('$npm_config_dir_utility2').testReportCreate(testReport);
     "
 )}
 
-shTravisCronAlphaDelete() {(set -e
-# this function will delete the alpha-branch cron-job for the travis-repo $1
-    curl -H "Authorization: token $TRAVIS_ACCESS_TOKEN" \
-        -H "Travis-API-Version: 3" \
-        -X DELETE \
-        -fs \
-        "https://api.travis-ci.org/cron/$(shTravisCronAlphaIdGet $1)" \
-)}
-
-shTravisCronAlphaIdGet() {(set -e
-# this function will get the alpha-branch cron-id for the travis-repo $1
-    node -e "try { console.log(
-        $(curl -H \"Authorization: token $TRAVIS_ACCESS_TOKEN\" \
-            -H "Travis-API-Version: 3" \
-            -s \
-            https://api.travis-ci.org/repo/$(shTravisRepoIdGet $1)/branch/alpha/cron).id || ''
-    ); } catch (ignore) {}"
-)}
-
-shTravisCronAlphaMonthlySet() {(set -e
-# this function will set the alpha-branch cron to run monthlyfor the travis-repo $1
-    curl -H "Travis-API-Version: 3" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: token $TRAVIS_ACCESS_TOKEN" \
-        -X POST \
-        -d '{"dont_run_if_recent_build_exists":true,"interval":"monthly"}' \
-        -fs \
-        "https://api.travis-ci.org/repo/$(shTravisRepoIdGet $1)/branch/alpha/cron"
-    printf "\n"
-)}
-
 shTravisCryptoAesDecryptYml() {(set -e
 # this function will decrypt $CRYPTO_AES_ENCRYPTED_SH in .travis.yml to stdout
     sed -n "s/.* - CRYPTO_AES_ENCRYPTED_SH: \(.*\) # CRYPTO_AES_ENCRYPTED_SH\$/\\1/p" \
@@ -2678,8 +2731,8 @@ YjZiMmIwNjYyY2E0OGI5YjQ4ZmI3YTdkYmU4NjViN2I=I93wn43H8K4/eB5Wvi6A2irUFGh17rfCMer3
 }
 
 shTravisHookListGet() {(set -e
-# this function will get the list of travis-repos with the search paramters $1
 # https://docs.travis-ci.com/api#repositories
+# this function will get the list of travis-repos with the search paramters $1
 # Parameter - Default - Description
 # ids - "" - list of repository ids to fetch, cannot be combined with other parameters
 # member - "" - filter by user that has access to it (github login)
@@ -2694,8 +2747,8 @@ shTravisHookListGet() {(set -e
 )}
 
 shTravisHookListGetJson() {(set -e
-# this function will get the json-list of travis-repos with the search paramters $1
 # https://docs.travis-ci.com/api#repositories
+# this function will get the json-list of travis-repos with the search paramters $1
 # Parameter - Default - Description
 # ids - "" - list of repository ids to fetch, cannot be combined with other parameters
 # member - "" - filter by user that has access to it (github login)
@@ -2715,8 +2768,8 @@ shTravisRepoIdGet() {(set -e
 )}
 
 shTravisRepoListCreate() {(set -e
-# this function will create the travis-repo $LIST[ii]
 # https://docs.travis-ci.com/api
+# this function will create the travis-repo $LIST[ii]
     EXIT_CODE=0
     export MODE_BUILD=shTravisRepoListCreate
     LIST="$1"
@@ -2813,8 +2866,8 @@ shTravisRepoListGet() {(set -e
 )}
 
 shTravisRepoListGetJson() {(set -e
-# this function will get the list of travis-repos for the given $TRAVIS_ACCESS_TOKEN
 # https://docs.travis-ci.com/api#repositories
+# this function will get the list of travis-repos for the given $TRAVIS_ACCESS_TOKEN
 # Parameter - Default - Description
 # ids - "" - list of repository ids to fetch, cannot be combined with other parameters
 # member - "" - filter by user that has access to it (github login)
