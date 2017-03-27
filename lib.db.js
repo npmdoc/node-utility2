@@ -255,26 +255,28 @@
             onError = local.onErrorWithStack(onError);
             onEach = onEach || local.nop;
             self = function (error) {
+                // decrement counter
+                self.counter -= 1;
+                self.current += 1;
                 onEach(error, self);
-                // if previously counter === 0 or error occurred, then return
-                if (self.counter === 0 || self.error) {
+                // ensure onError is run only once
+                if (self.counter < 0 || self.error) {
                     return;
                 }
                 // handle error
                 if (error) {
                     self.error = error;
-                    // ensure counter will decrement to 0
-                    self.counter = 1;
+                    // ensure counter < 0
+                    self.counter = -1;
                 }
-                // decrement counter
-                self.counter -= 1;
-                // if counter === 0, then call onError with error
-                if (self.counter === 0) {
+                // if counter <= 0, then call onError with error
+                if (self.counter <= 0) {
                     onError(error);
                 }
             };
             // init counter
             self.counter = 0;
+            self.current = 0;
             // return callback
             return self;
         };

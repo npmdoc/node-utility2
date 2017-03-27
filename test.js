@@ -212,10 +212,7 @@
         /*
          * this function will test ajax's error handling-behavior
          */
-            var onParallel;
-            onParallel = local.onParallel(onError);
-            onParallel.counter += 1;
-            [{
+            options = { list: [{
                 // test 404-not-found-error handling-behavior
                 url: '/test.error-404'
             }, {
@@ -228,9 +225,9 @@
                 // test undefined https-url handling-behavior
                 timeout: 1,
                 url: 'https://undefined:0'
-            }].forEach(function (_) {
-                options = _;
-                onParallel.counter += 1;
+            }] };
+            local.onParallelList(options, function (options, ii, list, onParallel) {
+                options = list[ii];
                 local.ajax(options, function (error, xhr) {
                     // validate error occurred
                     local.assert(error, error);
@@ -240,21 +237,19 @@
                     xhr.getResponseHeader('undefined');
                     onParallel();
                 });
-            });
-            onParallel();
+            }, onError);
         };
 
         local.testCase_ajax_post = function (options, onError) {
         /*
          * this function will test ajax's POST handling-behavior
          */
-            var onParallel;
             options = {};
-            onParallel = local.onParallel(onError);
-            onParallel.counter += 1;
             // test /test.body handling-behavior
-            onParallel.counter += 1;
-            ['', 'arraybuffer', 'stream', 'text'].forEach(function (responseType) {
+            local.onParallelList({
+                list: ['', 'arraybuffer', 'stream', 'text']
+            }, function (responseType, ii, list, onParallel) {
+                responseType = list[ii];
                 local.ajax({
                     data: responseType === 'arraybuffer'
                         // test buffer post handling-behavior
@@ -289,41 +284,44 @@
                     }
                     onParallel();
                 });
-            });
-            // test /test.echo handling-behavior
-            local.ajax({
-                data:  'aa',
-                // test request-header handling-behavior
-                headers: { 'X-Request-Header-Test': 'aa' },
-                method: 'POST',
-                // test modeDebug handling-behavior
-                modeDebug: true,
-                url: '/test.echo'
-            }, function (error, xhr) {
-                // validate no error occurred
-                local.assert(!error, error);
-                // validate statusCode
-                local.assertJsonEqual(xhr.statusCode, 200);
-                // validate response
-                options.data = xhr.responseText;
-                local.assert((/\r\naa$/).test(options.data), options.data);
-                local.assert(
-                    (/\r\nx-request-header-test: aa\r\n/).test(options.data),
-                    options.data
-                );
-                // validate responseHeaders
-                options.data = xhr.getAllResponseHeaders();
-                local.assert(
-                    (/^X-Response-Header-Test: bb\r\n/im).test(options.data),
-                    options.data
-                );
-                options.data = xhr.getResponseHeader('x-response-header-test');
-                local.assertJsonEqual(options.data, 'bb');
-                options.data = xhr.getResponseHeader('undefined');
-                local.assertJsonEqual(options.data, null);
-                onParallel();
-            });
-            onParallel();
+                if (!ii) {
+                    return;
+                }
+                onParallel.counter += 1;
+                // test /test.echo handling-behavior
+                local.ajax({
+                    data:  'aa',
+                    // test request-header handling-behavior
+                    headers: { 'X-Request-Header-Test': 'aa' },
+                    method: 'POST',
+                    // test modeDebug handling-behavior
+                    modeDebug: true,
+                    url: '/test.echo'
+                }, function (error, xhr) {
+                    // validate no error occurred
+                    local.assert(!error, error);
+                    // validate statusCode
+                    local.assertJsonEqual(xhr.statusCode, 200);
+                    // validate response
+                    options.data = xhr.responseText;
+                    local.assert((/\r\naa$/).test(options.data), options.data);
+                    local.assert(
+                        (/\r\nx-request-header-test: aa\r\n/).test(options.data),
+                        options.data
+                    );
+                    // validate responseHeaders
+                    options.data = xhr.getAllResponseHeaders();
+                    local.assert(
+                        (/^X-Response-Header-Test: bb\r\n/im).test(options.data),
+                        options.data
+                    );
+                    options.data = xhr.getResponseHeader('x-response-header-test');
+                    local.assertJsonEqual(options.data, 'bb');
+                    options.data = xhr.getResponseHeader('undefined');
+                    local.assertJsonEqual(options.data, null);
+                    onParallel();
+                });
+            }, onError);
         };
 
         local.testCase_ajax_timeout = function (options, onError) {
@@ -421,20 +419,17 @@
         /*
          * this function will test blobRead's default handling-behavior
          */
-            var onParallel;
-            onParallel = local.onParallel(onError);
-            onParallel.counter += 1;
-            options = {};
-            [
+            options = { list: [
                 new local.Blob(['aa', 'bb', '\u1234 ', 0]),
                 new local.Blob(['aa', 'bb', '\u1234 ', 0], {
                     type: 'text/plain; charset=utf-8'
                 })
-            ].forEach(function (blob, ii) {
-                options.blob = blob;
+            ] };
+            local.onParallelList(options, function (blob, ii, list, onParallel) {
+                blob = list[ii];
                 [null, 'dataURL', 'text'].forEach(function (encoding) {
                     onParallel.counter += 1;
-                    local.blobRead(options.blob, encoding, function (error, data) {
+                    local.blobRead(blob, encoding, function (error, data) {
                         // validate no error occurred
                         local.assert(!error, error);
                         // validate data
@@ -461,8 +456,8 @@
                         onParallel();
                     });
                 });
-            });
-            onParallel();
+                onParallel();
+            }, onError);
         };
 
         local.testCase_bufferCreate_default = function (options, onError) {
@@ -571,6 +566,68 @@
                 local.exit('invalid exit-code');
                 onError();
             }, onError);
+        };
+
+        local.testCase_onParallelList_default = function (options, onError) {
+        /*
+         * this function will test onParallelList's default handling-behavior
+         */
+            // test default handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            options.rateLimit = 0;
+            options.rateMax = 0;
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                options.rateMax = Math.max(onParallel.counter, options.rateMax);
+                options.data.push(element);
+                onParallel();
+            }, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
+                local.assertJsonEqual(options.rateMax, 2);
+            });
+            // test null-case handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [];
+            local.onParallelList(options, local.onErrorThrow, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, []);
+            });
+            // test error handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                onParallel(local.errorDefault, element);
+            }, function (error) {
+                // validate error occurred
+                local.assert(error, error);
+                local.assertJsonEqual(options.data, []);
+            });
+            // test rateLimit handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            options.rateLimit = 4;
+            options.rateMax = 0;
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                options.rateMax = Math.max(onParallel.counter, options.rateMax);
+                options.data.push(element);
+                setTimeout(onParallel);
+            }, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
+                local.assertJsonEqual(options.rateMax, 4);
+                onError();
+            });
         };
 
         local.testCase_isNullOrUndefined_default = function (options, onError) {
@@ -761,26 +818,6 @@
             local.assert(options.changed, options);
             onError();
         };
-
-        //!! local.testCase_listUnflattenOnSeries_default = function (options, onError) {
-        //!! /*
-         //!! * this function will test listUnflattenOnSeries's default handling-behavior
-         //!! */
-            //!! options = {};
-            //!! options.data = [];
-            //!! local.listUnflattenOnSeries([1, 2, 3, 4, 5], -1, function (subList, onNext) {
-                //!! options.data.push(subList);
-                //!! onNext();
-            //!! }, local.onErrorThrow);
-            //!! local.assertJsonEqual(options.data, [[1], [2], [3], [4], [5]]);
-            //!! options.data = [];
-            //!! local.listUnflattenOnSeries([1, 2, 3, 4, 5], 2, function (subList, onNext) {
-                //!! options.data.push(subList);
-                //!! onNext();
-            //!! }, local.onErrorThrow);
-            //!! local.assertJsonEqual(options.data, [[1, 2], [3, 4], [5]]);
-            //!! onError();
-        //!! };
 
         local.testCase_normalizeXxx_default = function (options, onError) {
         /*

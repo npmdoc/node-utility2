@@ -45,7 +45,7 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 #### changes for v2017.3.22
 - add npm-package badge to npmdoc
 - add branch-cron
-- add function dbTableTravisRepoCreate and dbTableTravisRepoUpdate
+- add function dbTableTravisRepoCreate, dbTableTravisRepoUpdate, and onParallelList
 - add github-crud function contentTouchList
 - add shell-function shGitRemotePromote to auto-promote branches alpha -> beta -> master
 - add shell-function shGithubRepoListTouch, shListUnflattenAndApply, and shNpmInstallWithPeerDependencies

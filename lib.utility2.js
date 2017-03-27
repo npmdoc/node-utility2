@@ -1146,7 +1146,7 @@ local.assetsDict['/favicon.ico'] = '';
          * <data2>\r\n
          * --Boundary--\r\n
          */
-            var boundary, onParallel, result;
+            var boundary, result;
             // handle null-case
             if (this.entryList.length === 0) {
                 onError(null, local.bufferCreate());
@@ -1156,27 +1156,21 @@ local.assetsDict['/favicon.ico'] = '';
             boundary = '--' + Date.now().toString(16) + Math.random().toString(16);
             // init result
             result = [];
-            onParallel = local.onParallel(function (error) {
-                // add closing boundary
-                result.push([boundary + '--\r\n']);
-                // concatenate result
-                onError(
-                    error,
-                    // flatten result
-                    !error && local.bufferConcat(Array.prototype.concat.apply([], result))
-                );
-            });
-            onParallel.counter += 1;
-            this.entryList.forEach(function (element, ii) {
+            local.onParallelList({
+                list: this.entryList
+            }, function (element, ii, list, onParallel) {
                 var value;
+                // jslint-hack
+                local.nop(list);
                 value = element.value;
                 if (!(value instanceof local.Blob)) {
-                    result[ii] = [boundary + '\r\nContent-Disposition: form-data; name="' +
-                        element.name + '"\r\n\r\n', value, '\r\n'];
+                    result[ii] = [boundary +
+                        '\r\nContent-Disposition: form-data; name="' + element.name +
+                        '"\r\n\r\n', value, '\r\n'];
+                    onParallel();
                     return;
                 }
                 // read from blob in parallel
-                onParallel.counter += 1;
                 local.blobRead(value, 'binary', function (error, data) {
                     result[ii] = !error && [boundary +
                         '\r\nContent-Disposition: form-data; name="' + element.name + '"' +
@@ -1192,8 +1186,16 @@ local.assetsDict['/favicon.ico'] = '';
                         '\r\n', data, '\r\n'];
                     onParallel(error);
                 });
+            }, function (error) {
+                // add closing boundary
+                result.push([boundary + '--\r\n']);
+                // concatenate result
+                onError(
+                    error,
+                    // flatten result
+                    !error && local.bufferConcat(Array.prototype.concat.apply([], result))
+                );
             });
-            onParallel();
         };
 
         // init lib _http
@@ -2400,27 +2402,12 @@ return Utf8ArrayToStr(bff);
             }, onError);
         };
 
-        local.buildApp = function (optionsList, onError) {
+        local.buildApp = function (options, onError) {
         /*
          * this function will build the app
          */
-            var onParallel;
             local.fsRmrSync(local.env.npm_config_dir_build + '/app');
-            onParallel = local.onParallel(function (error) {
-                /* istanbul ignore next */
-                if (!local.global.__coverage__) {
-                    local.fs.writeFileSync(
-                        'assets.' + local.env.npm_package_nameAlias + '.rollup.js',
-                        local.assetsDict['/assets.' + local.env.npm_package_nameAlias +
-                            '.rollup.js'] ||
-                            local.assetsDict['/assets.' + local.env.npm_package_nameAlias +
-                                '.js']
-                    );
-                }
-                onError(error);
-            });
-            onParallel.counter += 1;
-            optionsList = optionsList.concat({
+            local.onParallelList({ list: options.concat({
                 file: '/assets.' + local.env.npm_package_nameAlias + '.js',
                 url: '/assets.' + local.env.npm_package_nameAlias + '.js'
             }, {
@@ -2444,9 +2431,8 @@ return Utf8ArrayToStr(bff);
             }, {
                 file: '/jsonp.utility2._stateInit',
                 url: '/jsonp.utility2._stateInit?callback=window.utility2._stateInit'
-            });
-            optionsList.forEach(function (options) {
-                onParallel.counter += 1;
+            }) }, function (options, ii, list, onParallel) {
+                options = list[ii];
                 local.ajax(options, function (error, xhr) {
                     // validate no error occurred
                     local.assert(!error, error);
@@ -2460,25 +2446,39 @@ return Utf8ArrayToStr(bff);
                     );
                     onParallel();
                 });
+                if (!ii) {
+                    return;
+                }
+                // test standalone assets.app.js
+                onParallel.counter += 1;
+                local.fs.writeFileSync('tmp/assets.app.js', local.assetsDict['/assets.app.js']);
+                local.processSpawnWithTimeout(process.argv[0], ['assets.app.js'], {
+                    cwd: 'tmp',
+                    env: {
+                        PORT: (Math.random() * 0x10000) | 0x8000,
+                        npm_config_timeout_exit: 5000
+                    },
+                    stdio: ['ignore', 1, 2]
+                })
+                    .once('error', onParallel)
+                    .once('exit', function (exitCode) {
+                        // validate exitCode
+                        local.assert(!exitCode, exitCode);
+                        onParallel();
+                    });
+            }, function (error) {
+                /* istanbul ignore next */
+                if (!local.global.__coverage__) {
+                    local.fs.writeFileSync(
+                        'assets.' + local.env.npm_package_nameAlias + '.rollup.js',
+                        local.assetsDict['/assets.' + local.env.npm_package_nameAlias +
+                            '.rollup.js'] ||
+                            local.assetsDict['/assets.' + local.env.npm_package_nameAlias +
+                                '.js']
+                    );
+                }
+                onError(error);
             });
-            // test standalone assets.app.js
-            onParallel.counter += 1;
-            local.fs.writeFileSync('tmp/assets.app.js', local.assetsDict['/assets.app.js']);
-            local.processSpawnWithTimeout(process.argv[0], ['assets.app.js'], {
-                cwd: 'tmp',
-                env: {
-                    PORT: (Math.random() * 0x10000) | 0x8000,
-                    npm_config_timeout_exit: 5000
-                },
-                stdio: ['ignore', 1, 2]
-            })
-                .once('error', onParallel)
-                .once('exit', function (exitCode) {
-                    // validate exitCode
-                    local.assert(!exitCode, exitCode);
-                    onParallel();
-                });
-            onParallel();
         };
 
         local.buildLib = function (options, onError) {
@@ -3785,28 +3785,29 @@ header: '\
             onError = local.onErrorWithStack(onError);
             onEach = onEach || local.nop;
             self = function (error) {
-                self.current += 1;
+                // decrement counter
+                self.counter -= 1;
+                local.assert(self.counter >= 0 || self.error);
                 onEach(error, self);
-                // if previously counter === 0 or error occurred, then return
-                if (self.counter === 0 || self.error) {
+                self.ii += 1;
+                // ensure onError is run only once
+                if (self.counter < 0) {
                     return;
                 }
                 // handle error
                 if (error) {
                     self.error = error;
-                    // ensure counter will decrement to 0
-                    self.counter = 1;
+                    // ensure counter < 0
+                    self.counter = -1;
                 }
-                // decrement counter
-                self.counter -= 1;
-                // if counter === 0, then call onError with error
-                if (self.counter === 0) {
+                // if counter <= 0, then call onError with error
+                if (self.counter <= 0) {
                     onError(error);
                 }
             };
             // init counter
             self.counter = 0;
-            self.current = 0;
+            self.ii = 0;
             // return callback
             return self;
         };
@@ -3815,24 +3816,27 @@ header: '\
         /*
          * this function will run onEach on options.list in parallel
          */
-            var inParallel, onParallel;
+            var ii, onParallel;
+            ii = -1;
+            options.rateLimit = options.rateLimit || Infinity;
             onParallel = local.onParallel(onError, function (error, data) {
                 if (error) {
                     onError(error, data);
                     return;
                 }
-                while (options.list.length && inParallel < options.inParallelLimit) {
-                    onEach(options.list.shift(), onParallel);
+                while (ii + 1 < options.list.length &&
+                        (onParallel.counter < options.rateLimit || onParallel.counter < 2)) {
+                    ii += 1;
+                    onParallel.counter += 1;
+                    onEach(options.list[ii], ii, options.list, onParallel);
                 }
             });
             onParallel.counter += 1;
-            local.objectSetDefault(options, {
-                inParallelLimit: Infinity
-            });
-            inParallel = 0;
-            onParallel.counter += options.list.length;
-            while (options.list.length && inParallel < options.inParallelLimit) {
-                onEach(options.list.shift(), onParallel);
+            while (ii + 1 < options.list.length &&
+                    (onParallel.counter < options.rateLimit || onParallel.counter < 2)) {
+                ii += 1;
+                onParallel.counter += 1;
+                onEach(options.list[ii], ii, options.list, onParallel);
             }
             onParallel();
         };
@@ -5294,10 +5298,7 @@ instruction\n\
          * this function will update dbTableTravisRepo
          */
             var self;
-            options = local.objectSetDefault(options, {
-                inParallelLimit: 4,
-                queryLimit: 256
-            });
+            options = local.objectSetDefault(options, { queryLimit: 256, rateLimit: 4 });
             local.onNext(options, function (error, data) {
                 switch (options.modeNext) {
                 case 1:
@@ -5324,9 +5325,10 @@ instruction\n\
                         limit: options.queryLimit
                     });
                     local.onParallelList({
-                        inParallelLimit: options.inParallelLimit,
-                        list: data
-                    }, function (dbRow, onParallel) {
+                        list: data,
+                        rateLimit: options.rateLimit
+                    }, function (dbRow, ii, list, onParallel) {
+                        dbRow = list[ii];
                         local.ajax({
                             headers: {
                                 Authorization: 'token ' + local.env.TRAVIS_ACCESS_TOKEN
@@ -5338,9 +5340,9 @@ instruction\n\
                             data = JSON.parse(data.responseText);
                             data.githubRepo = dbRow.githubRepo;
                             self.crudUpdateOneById(data);
-                            if (onParallel.current % 100 === 0 || onParallel.counter === 1) {
+                            if (onParallel.ii % 100 === 0 || onParallel.counter === 0) {
                                 console.error('dbTableTravisRepoUpdate - updated ' +
-                                    onParallel.current + ' dbRows');
+                                    (onParallel.ii + 1) + ' dbRows');
                             }
                             onParallel();
                         });

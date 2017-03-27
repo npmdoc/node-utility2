@@ -1983,8 +1983,7 @@ local.fs.readFileSync(local.file, 'utf8').replace(local.rgx, function (match0, m
     // jslint-hack
     local.nop(match0);
     match1 = match1.split('@');
-    match1[1] = (match1[1] || '*').split(' ')[0];
-    local.dict[match1[0]] = local.dict[match1[0]] || match1[1];
+    local.dict[match1[0]] = local.dict[match1[0]] || (match1[1] || '').trim();
 });
 Object.keys(local.dict).forEach(function (key) {
     console.error('npm install ' + key + '@' + local.dict[key]);
