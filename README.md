@@ -903,8 +903,11 @@ shBuildCiInternalPost() {(set -e
 shBuildCiInternalPre() {(set -e
     shReadmeTest example.js
     # save screen-capture
+    (
+    export MODE_BUILD=testExampleJs
     shBrowserScreenCapture /tmp/app/tmp/build/coverage.html/app/example.js.html
     shBrowserScreenCapture "$npm_config_dir_build/test-report.html"
+    )
     shReadmeTest example.sh
     shNpmTestPublished
 )}
