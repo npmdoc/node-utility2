@@ -659,7 +659,7 @@ utility2-comment -->\n\
         "utility2-jslint": "lib.jslint.js",
         "utility2-uglifyjs": "lib.uglifyjs.js"
     },
-    "description": "the zero-dependency swiss-army-knife utility2 for building, testing, and deploying webapps",
+    "description": "the zero-dependency, swiss-army-knife utility for building, testing, and deploying webapps",
     "devDependencies": {
         "electron-lite": "kaizhu256/node-electron-lite#alpha"
     },
@@ -858,7 +858,7 @@ shBuildCiInternalPost() {(set -e
         mkdir -p tmp/storage.undefined
         curl -Ls https://kaizhu256.github.io/node-utility2/dbTable.TravisRepo > \
             tmp/storage.undefined/dbTable.TravisRepo
-        utility2 dbTableTravisRepoUpdate
+        ./lib.utility2.sh dbTableTravisRepoUpdate
         ;;
     esac
     shReadmeBuildLinkVerify
