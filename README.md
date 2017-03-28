@@ -1,5 +1,5 @@
 # utility2
-the zero-dependency swiss-army-knife tool for building, testing, and deploying webapps
+the zero-dependency swiss-army-knife utility2 for building, testing, and deploying webapps
 
 [![travis-ci.org build-status](https://api.travis-ci.org/kaizhu256/node-utility2.svg)](https://travis-ci.org/kaizhu256/node-utility2) [![istanbul-coverage](https://kaizhu256.github.io/node-utility2/build/coverage.badge.svg)](https://kaizhu256.github.io/node-utility2/build/coverage.html/index.html)
 
@@ -29,13 +29,13 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 
 #### todo
 - npm publish 2017.3.22
+- make $url the first parameter in shell-function shBrowserTest
 - calculate peer-dependencies for packages
 - add function to remotely update .travis.yml
 - query failed travis-ci builds
 - rename sub-package db-lite -> nedb-lite
 - rename sub-package istanbul-lite -> istanbul-classic
 - rename sub-package jslint-lite -> jslint-classic
-- use optional remote-credentials during travis-ci build
 - allow server-side stdout to be streamed to webapps
 - add utility2.middlewareLimit
 - add server stress test using electron
@@ -55,6 +55,7 @@ the zero-dependency swiss-army-knife tool for building, testing, and deploying w
 - fix apidoc bug 'Function.prototype.toString is not generic'
 - fix shell-function shInit bug - export: npm_package_react-native: bad variable name
 - revamp shell-scripting by replacine \$@ -> \$*
+- use optional remote-credentials during travis-ci build
 - none
 
 #### this package requires
@@ -620,7 +621,7 @@ utility2-comment -->\n\
             break;
         }
         process.env.PORT = process.env.PORT || '8081';
-        console.log('server starting on port ' + process.env.PORT);
+        console.error('server starting on port ' + process.env.PORT);
         local.http.createServer(function (request, response) {
             request.urlParsed = local.url.parse(request.url);
             if (local.assetsDict[request.urlParsed.pathname] !== undefined) {
@@ -658,7 +659,7 @@ utility2-comment -->\n\
         "utility2-jslint": "lib.jslint.js",
         "utility2-uglifyjs": "lib.uglifyjs.js"
     },
-    "description": "the zero-dependency swiss-army-knife tool for building, testing, and deploying webapps",
+    "description": "the zero-dependency swiss-army-knife utility2 for building, testing, and deploying webapps",
     "devDependencies": {
         "electron-lite": "kaizhu256/node-electron-lite#alpha"
     },
@@ -851,6 +852,9 @@ shBuildCiInternalPost() {(set -e
     #// coverage-hack
     shDeployGithub
     shDeployHeroku
+    #!! curl tmp/storage.undefined/dbTable.TravisRepo tmp/storage.undefined/dbTable.TravisRepo
+    #!! cp tmp/storage.undefinded
+    #!! utility2 dbTableTravisRepoUpdate
     shReadmeBuildLinkVerify
 )}
 

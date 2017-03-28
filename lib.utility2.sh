@@ -48,7 +48,7 @@ shBaseInstall() {
 # curl https://raw.githubusercontent.com/kaizhu256/node-utility2/alpha/lib.utility2.sh > $HOME/lib.utility2.sh && . $HOME/lib.utility2.sh && shBaseInstall
     for FILE in .screenrc .vimrc lib.utility2.sh
     do
-        curl -s "https://raw.githubusercontent.com/kaizhu256/node-utility2/alpha/$FILE" > \
+        curl -Ls "https://raw.githubusercontent.com/kaizhu256/node-utility2/alpha/$FILE" > \
             "$HOME/$FILE" || return $?
     done
     # backup .bashrc
@@ -312,7 +312,7 @@ shBuildCi() {(set -e
         for PACKAGE in utility2 "kaizhu256/node-utility2#alpha"
         do
             docker run "$GITHUB_REPO:$DOCKER_TAG" /bin/bash -c "set -e
-                curl https://raw.githubusercontent.com\
+                curl -Ls https://raw.githubusercontent.com\
 /kaizhu256/node-utility2/alpha/lib.utility2.sh > /tmp/lib.utility2.sh
                 . /tmp/lib.utility2.sh
                 npm install '$PACKAGE'
@@ -513,7 +513,7 @@ shDeployGithub() {(set -e
     shBuildPrint "waiting 15 seconds for $TEST_URL to finish deploying"
     sleep 15
     # verify deployed app's main-page returns status-code < 400
-    if [ $(curl --connect-timeout 60 -o /dev/null -w "%{http_code}" "$TEST_URL") -lt 400 ]
+    if [ $(curl --connect-timeout 60 -L -o /dev/null -w "%{http_code}" "$TEST_URL") -lt 400 ]
     then
         shBuildPrint "curl test passed for $TEST_URL"
     else
@@ -526,9 +526,7 @@ shDeployGithub() {(set -e
         export url="$TEST_URL?modeTest=1&timeExit={{timeExit}}"
         shBrowserTest)
     # screen-capture deployed app
-    (export modeBrowserTest=screenCapture
-        export url="$TEST_URL"
-        shBrowserTest)
+    shBrowserScreenCapture "$TEST_URL"
 )}
 
 shDeployHeroku() {(set -e
@@ -553,7 +551,7 @@ shDeployHeroku() {(set -e
     export MODE_BUILD=deployHeroku
     export TEST_URL="https://$npm_package_nameHeroku-$CI_BRANCH.herokuapp.com"
     # verify deployed app's main-page returns status-code < 400
-    if [ $(curl --connect-timeout 60 -o /dev/null -w "%{http_code}" "$TEST_URL") -lt 400 ]
+    if [ $(curl --connect-timeout 60 -L -o /dev/null -w "%{http_code}" "$TEST_URL") -lt 400 ]
     then
         shBuildPrint "curl test passed for $TEST_URL"
     else
@@ -566,9 +564,7 @@ shDeployHeroku() {(set -e
         export url="$TEST_URL?modeTest=1&timeExit={{timeExit}}"
         shBrowserTest)
     # screen-capture deployed app
-    (export modeBrowserTest=screenCapture
-        export url="$TEST_URL"
-        shBrowserTest)
+    shBrowserScreenCapture "$TEST_URL"
 )}
 
 shDockerBuildCleanup() {(set -e
@@ -603,7 +599,7 @@ shDockerCopyFromImage() {(set -e
 shDockerInstall() {(set -e
 # this function will install docker
     mkdir -p "$HOME/docker"
-    curl -s https://get.docker.com/ | /bin/sh
+    curl -Ls https://get.docker.com/ | /bin/sh
     # test docker
     docker run hello-world
 )}
@@ -620,7 +616,7 @@ shDockerNpmRestart() {(set -e
     DIR="$3"
     DOCKER_PORT="$4"
     shDockerRestart $NAME $IMAGE /bin/bash -c "set -e
-        curl -s \
+        curl -Ls \
             https://raw.githubusercontent.com/kaizhu256/node-utility2/alpha/lib.utility2.sh > \
             /tmp/lib.utility2.sh
         . /tmp/lib.utility2.sh
@@ -1273,13 +1269,13 @@ shGithubRepoBaseCreate() {(set -e
         return
     fi
     GITHUB_REPO="$1"
-    ORG="$2"
+    GITHUB_ORG="$2"
     NAME="$(printf "$GITHUB_REPO" | sed -e s/.*\\///)"
     URL=https://api.github.com/user/repos
-    # init github $ORG url
-    if [ "$ORG" ]
+    # init github $GITHUB_ORG url
+    if [ "$GITHUB_ORG" ]
     then
-        URL="https://api.github.com/orgs/$ORG/repos"
+        URL="https://api.github.com/orgs/$GITHUB_ORG/repos"
     fi
     printf "creating github repo https://github.com/$GITHUB_REPO.git\n"
     # init /tmp/githubRepoBase
@@ -1502,6 +1498,7 @@ value = String((dict.repository && dict.repository.url) || dict.repository || ''
     .replace((/\.git\$/), '');
 if (process.env.GITHUB_REPO === undefined && (/^[^\/]+\/[^\/]+\$/).test(value)) {
     process.stdout.write('export GITHUB_REPO=' + JSON.stringify(value) + ';');
+    process.stdout.write('export GITHUB_ORG=' + JSON.stringify(value.split('/')[0]) + ';');
 }
 // </script>
         ") || return $?
@@ -1774,7 +1771,8 @@ shMain() {
         [ "$COMMAND" = -e ] ||
         [ "$COMMAND" = -i ] ||
         [ "$COMMAND" = ajax ] ||
-        [ "$COMMAND" = browserTest ]
+        [ "$COMMAND" = browserTest ] ||
+        [ "$COMMAND" = dbTableTravisRepoUpdate ]
     then
         shInitNpmConfigDirUtility2
         "$npm_config_dir_utility2/lib.utility2.js" "$COMMAND" $*
@@ -2431,10 +2429,11 @@ console.log(require('fs').readFileSync('$FILE', 'utf8').trimLeft());
     export PORT=8081
     export npm_config_timeout_exit=30000
     # screen-capture server
-    (sleep 15
-        export modeBrowserTest=screenCapture
-        export url="http://127.0.0.1:$PORT"
-        shBrowserTest) &
+    (
+    shBuildPrint "waiting 20 seconds to screen-capture http://127.0.0.1:$PORT"
+    sleep 20
+    shBrowserScreenCapture "http://127.0.0.1:$PORT"
+    ) &
     case "$FILE" in
     example.js)
         printf "$SCRIPT\n\n"
@@ -2657,8 +2656,15 @@ require('$npm_config_dir_utility2').testReportCreate(testReport);
 
 shTravisCryptoAesDecryptYml() {(set -e
 # this function will decrypt $CRYPTO_AES_ENCRYPTED_SH in .travis.yml to stdout
-    sed -n "s/.* - CRYPTO_AES_ENCRYPTED_SH: \(.*\) # CRYPTO_AES_ENCRYPTED_SH\$/\\1/p" \
-        .travis.yml | shCryptoAesDecrypt
+    CRYPTO_AES_ENCRYPTED_SH="$(sed -n \
+        "s/.* - CRYPTO_AES_ENCRYPTED_SH: \(.*\) # CRYPTO_AES_ENCRYPTED_SH\$/\\1/p" .travis.yml)"
+    if [ ! "$CRYPTO_AES_ENCRYPTED_SH" ]
+    then
+        shInit
+        CRYPTO_AES_ENCRYPTED_SH="$(curl -Ls \
+            "https://kaizhu256.github.io/node-utility2/$GITHUB_ORG/CRYPTO_AES_ENCRYPTED_SH")"
+    fi
+    printf "$CRYPTO_AES_ENCRYPTED_SH" | shCryptoAesDecrypt
 )}
 
 shTravisCryptoAesEncryptYml() {(set -e
@@ -2680,7 +2686,7 @@ shTravisCryptoAesEncryptYml() {(set -e
     fi
     printf "# travis-encrypting \$CRYPTO_AES_KEY for $GITHUB_REPO\n"
     # get public rsa key from https://api.travis-ci.org/repos/<owner>/<repo>/key
-    curl -s "https://api.travis-ci.org/repos/$GITHUB_REPO/key" | \
+    curl -Ls "https://api.travis-ci.org/repos/$GITHUB_REPO/key" | \
         sed -n \
             -e "s/.*-----BEGIN [RSA ]*PUBLIC KEY-----\(.*\)-----END [RSA ]*PUBLIC KEY-----.*/\
 -----BEGIN PUBLIC KEY-----\\1-----END PUBLIC KEY-----/" \
@@ -2772,7 +2778,7 @@ shTravisRepoListCreate() {(set -e
     EXIT_CODE=0
     export MODE_BUILD=shTravisRepoListCreate
     LIST="$1"
-    ORG="$2"
+    GITHUB_ORG="$2"
     shBuildPrint "creating github-repos $LIST ..."
     # init /tmp/githubRepoBase
     if [ ! -d /tmp/githubRepoBase ]
@@ -2796,7 +2802,7 @@ shTravisRepoListCreate() {(set -e
         then
             return
         fi
-        shGithubRepoBaseCreate "$GITHUB_REPO" npmdoc
+        shGithubRepoBaseCreate "$GITHUB_REPO" "$GITHUB_ORG"
     ) &
     done
     for JOB in $(jobs -p)

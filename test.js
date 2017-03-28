@@ -284,10 +284,9 @@
                     }
                     onParallel();
                 });
-                if (!ii) {
-                    return;
-                }
-                onParallel.counter += 1;
+            }, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
                 // test /test.echo handling-behavior
                 local.ajax({
                     data:  'aa',
@@ -319,9 +318,9 @@
                     local.assertJsonEqual(options.data, 'bb');
                     options.data = xhr.getResponseHeader('undefined');
                     local.assertJsonEqual(options.data, null);
-                    onParallel();
+                    onError();
                 });
-            }, onError);
+            });
         };
 
         local.testCase_ajax_timeout = function (options, onError) {
@@ -1117,8 +1116,8 @@
                     error.message.indexOf('testCase_onTimeout_errorTimeout') >= 0,
                     error
                 );
-                // save timeElapsed
-                local.timeElapsedStop(options);
+                // poll timeElapsed
+                local.timeElapsedPoll(options);
                 // validate timeElapsed passed is greater than timeout
                 local.assert(options.timeElapsed >= 1500, options);
                 onError();

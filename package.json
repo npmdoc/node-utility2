@@ -8,7 +8,7 @@
         "utility2-jslint": "lib.jslint.js",
         "utility2-uglifyjs": "lib.uglifyjs.js"
     },
-    "description": "the zero-dependency swiss-army-knife tool for building, testing, and deploying webapps",
+    "description": "the zero-dependency swiss-army-knife utility2 for building, testing, and deploying webapps",
     "devDependencies": {
         "electron-lite": "kaizhu256/node-electron-lite#alpha"
     },

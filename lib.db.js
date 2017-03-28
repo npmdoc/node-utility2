@@ -257,12 +257,13 @@
             self = function (error) {
                 // decrement counter
                 self.counter -= 1;
-                self.current += 1;
-                onEach(error, self);
+                // validata counter
+                console.assert(self.counter >= 0 || error || self.error);
                 // ensure onError is run only once
-                if (self.counter < 0 || self.error) {
+                if (self.counter < 0) {
                     return;
                 }
+                onEach(error, self);
                 // handle error
                 if (error) {
                     self.error = error;
@@ -276,7 +277,6 @@
             };
             // init counter
             self.counter = 0;
-            self.current = 0;
             // return callback
             return self;
         };
@@ -766,9 +766,7 @@
                     return true;
                 }
             });
-            if (!result) {
-                return result;
-            }
+            result = result || {};
             // remove existing dbRow
             this._crudRemoveOneById(result);
             // update dbRow
@@ -1151,6 +1149,7 @@
                 local.setTimeoutOnError(onError, error);
             });
             onParallel.counter += 1;
+            onParallel.counter += 1;
             local.storageClear(onParallel);
             Object.keys(local.dbTableDict).forEach(function (key) {
                 onParallel.counter += 1;
@@ -1429,7 +1428,7 @@
                     result[key] = dbRow[key];
                 }
             });
-            return local.jsonCopy(result);
+            return JSON.parse(local.jsonStringifyOrdered(result));
         };
 
         local.dbRowSetId = function (dbRow, idIndex) {
