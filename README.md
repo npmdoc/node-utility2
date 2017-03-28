@@ -855,6 +855,7 @@ shBuildCiInternalPost() {(set -e
     case "$CI_BRANCH" in
     # update public, travis-repo db
     alpha)
+        mkdir -p tmp/storage.undefined
         curl -Ls https://kaizhu256.github.io/node-utility2/dbTable.TravisRepo > \
             tmp/storage.undefined/dbTable.TravisRepo
         utility2 dbTableTravisRepoUpdate

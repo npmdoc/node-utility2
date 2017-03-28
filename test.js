@@ -567,68 +567,6 @@
             }, onError);
         };
 
-        local.testCase_onParallelList_default = function (options, onError) {
-        /*
-         * this function will test onParallelList's default handling-behavior
-         */
-            // test default handling-behavior
-            options = {};
-            options.data = [];
-            options.list = [1, 2, 3, 4, 5];
-            options.rateLimit = 0;
-            options.rateMax = 0;
-            local.onParallelList(options, function (element, ii, list, onParallel) {
-                element = list[ii];
-                options.rateMax = Math.max(onParallel.counter, options.rateMax);
-                options.data.push(element);
-                onParallel();
-            }, function (error) {
-                // validate no error occurred
-                local.assert(!error, error);
-                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
-                local.assertJsonEqual(options.rateMax, 2);
-            });
-            // test null-case handling-behavior
-            options = {};
-            options.data = [];
-            options.list = [];
-            local.onParallelList(options, local.onErrorThrow, function (error) {
-                // validate no error occurred
-                local.assert(!error, error);
-                local.assertJsonEqual(options.data, []);
-            });
-            // test error handling-behavior
-            options = {};
-            options.data = [];
-            options.list = [1, 2, 3, 4, 5];
-            local.onParallelList(options, function (element, ii, list, onParallel) {
-                element = list[ii];
-                onParallel(local.errorDefault, element);
-            }, function (error) {
-                // validate error occurred
-                local.assert(error, error);
-                local.assertJsonEqual(options.data, []);
-            });
-            // test rateLimit handling-behavior
-            options = {};
-            options.data = [];
-            options.list = [1, 2, 3, 4, 5];
-            options.rateLimit = 4;
-            options.rateMax = 0;
-            local.onParallelList(options, function (element, ii, list, onParallel) {
-                element = list[ii];
-                options.rateMax = Math.max(onParallel.counter, options.rateMax);
-                options.data.push(element);
-                setTimeout(onParallel);
-            }, function (error) {
-                // validate no error occurred
-                local.assert(!error, error);
-                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
-                local.assertJsonEqual(options.rateMax, 4);
-                onError();
-            });
-        };
-
         local.testCase_isNullOrUndefined_default = function (options, onError) {
         /*
          * this function will test isNullOrUndefined's default handling-behavior
@@ -1065,6 +1003,68 @@
             }, function (error) {
                 // validate error occurred
                 local.assert(error, error);
+                onError();
+            });
+        };
+
+        local.testCase_onParallelList_default = function (options, onError) {
+        /*
+         * this function will test onParallelList's default handling-behavior
+         */
+            // test default handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            options.rateLimit = 0;
+            options.rateMax = 0;
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                options.rateMax = Math.max(onParallel.counter, options.rateMax);
+                options.data.push(element);
+                onParallel();
+            }, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
+                local.assertJsonEqual(options.rateMax, 2);
+            });
+            // test null-case handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [];
+            local.onParallelList(options, local.onErrorThrow, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, []);
+            });
+            // test error handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                onParallel(local.errorDefault, element);
+            }, function (error) {
+                // validate error occurred
+                local.assert(error, error);
+                local.assertJsonEqual(options.data, []);
+            });
+            // test rateLimit handling-behavior
+            options = {};
+            options.data = [];
+            options.list = [1, 2, 3, 4, 5];
+            options.rateLimit = 4;
+            options.rateMax = 0;
+            local.onParallelList(options, function (element, ii, list, onParallel) {
+                element = list[ii];
+                options.rateMax = Math.max(onParallel.counter, options.rateMax);
+                options.data.push(element);
+                setTimeout(onParallel);
+            }, function (error) {
+                // validate no error occurred
+                local.assert(!error, error);
+                local.assertJsonEqual(options.data, [1, 2, 3, 4, 5]);
+                local.assertJsonEqual(options.rateMax, 4);
                 onError();
             });
         };
