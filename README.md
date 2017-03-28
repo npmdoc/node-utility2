@@ -862,6 +862,8 @@ shBuildCiInternalPost() {(set -e
         ;;
     esac
     shReadmeBuildLinkVerify
+    # restore $CI_BRANCH
+    export CI_BRANCH="$CI_BRANCH_OLD"
     # docker build
     docker --version 2>/dev/null || return
     export DOCKER_TAG="$(printf "$CI_BRANCH" | sed -e "s/docker.//")"

@@ -326,8 +326,6 @@ shBuildCiInternal() {(set -e
     fi
     # create recent changelog of last 50 commits
     (export MODE_BUILD=gitLog; shRunScreenCapture git log -50 --pretty="%ai\u000a%B")
-    # restore $CI_BRANCH
-    export CI_BRANCH="$CI_BRANCH_OLD"
     if [ ! "$GITHUB_TOKEN" ]
     then
         return
