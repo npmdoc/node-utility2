@@ -852,21 +852,56 @@ shBuildCiInternalPost() {(set -e
     #// coverage-hack
     shDeployGithub
     shDeployHeroku
-    #!! curl tmp/storage.undefined/dbTable.TravisRepo tmp/storage.undefined/dbTable.TravisRepo
-    #!! cp tmp/storage.undefinded
-    #!! utility2 dbTableTravisRepoUpdate
+    case "$CI_BRANCH" in
+    # update public, travis-repo db
+    alpha)
+        curl -Ls https://kaizhu256.github.io/node-utility2/dbTable.TravisRepo > \
+            tmp/storage.undefined/dbTable.TravisRepo
+        utility2 dbTableTravisRepoUpdate
+        ;;
+    esac
     shReadmeBuildLinkVerify
+    # docker build
+    docker --version 2>/dev/null || return
+    export DOCKER_TAG="$(printf "$CI_BRANCH" | sed -e "s/docker.//")"
+    # if $DOCKER_TAG is not unique from $CI_BRANCH, then return
+    if [ "$DOCKER_TAG" = "$CI_BRANCH" ]
+    then
+        return
+    fi
+    # docker build
+    docker build -f "tmp/README.Dockerfile.$DOCKER_TAG" -t "$GITHUB_REPO:$DOCKER_TAG" .
+    # docker test
+    case "$CI_BRANCH" in
+    docker.base)
+        # npm test utility2
+        for PACKAGE in utility2 "kaizhu256/node-utility2#alpha"
+        do
+            docker run "$GITHUB_REPO:$DOCKER_TAG" /bin/bash -c "set -e
+                curl -Ls https://raw.githubusercontent.com\
+/kaizhu256/node-utility2/alpha/lib.utility2.sh > /tmp/lib.utility2.sh
+                . /tmp/lib.utility2.sh
+                npm install '$PACKAGE'
+                cd node_modules/utility2
+                shBuildInsideDocker
+            "
+        done
+        ;;
+    esac
+    # https://docs.travis-ci.com/user/docker/#Pushing-a-Docker-Image-to-a-Registry
+    # docker push
+    if [ "$DOCKER_PASSWORD" ]
+    then
+        docker login -p="$DOCKER_PASSWORD" -u="$DOCKER_USERNAME"
+        docker push "$GITHUB_REPO:$DOCKER_TAG"
+    fi
 )}
 
 shBuildCiInternalPre() {(set -e
     shReadmeTest example.js
     # save screen-capture
-    (export MODE_BUILD=testExampleJs
-        export modeBrowserTest=screenCapture
-        export url="/tmp/app/tmp/build/coverage.html/app/example.js.html"
-        shBrowserTest
-        export url="$npm_config_dir_build/test-report.html"
-        shBrowserTest)
+    shBrowserScreenCapture /tmp/app/tmp/build/coverage.html/app/example.js.html
+    shBrowserScreenCapture "$npm_config_dir_build/test-report.html"
     shReadmeTest example.sh
     shNpmTestPublished
 )}

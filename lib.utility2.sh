@@ -212,6 +212,12 @@ shBuildCi() {(set -e
         ;;
     cron)
         ;;
+    docker.base)
+        shBuildCiInternal
+        ;;
+    docker.latest)
+        shBuildCiInternal
+        ;;
     master)
         shBuildCiInternal
         ;;
@@ -352,6 +358,8 @@ shBuildCiInternal() {(set -e
     fi
     # create recent changelog of last 50 commits
     (export MODE_BUILD=gitLog; shRunScreenCapture git log -50 --pretty="%ai\u000a%B")
+    # restore $CI_BRANCH
+    export CI_BRANCH="$CI_BRANCH_OLD"
     if [ ! "$GITHUB_TOKEN" ]
     then
         return
@@ -363,7 +371,15 @@ shBuildCiInternal() {(set -e
     fi
     # upload build-artifacts to github, and if number of commits > $COMMIT_LIMIT,
     # then squash older commits
-    (export COMMIT_LIMIT=20; shBuildGithubUpload)
+    if [ "$CI_BRANCH" = alpha ] ||
+        [ "$CI_BRANCH" = beta ] ||
+        [ "$CI_BRANCH" = master ]
+    then
+        (
+        export COMMIT_LIMIT=20
+        shBuildGithubUpload
+        )
+    fi
 )}
 
 shBuildGithubUpload() {(set -e
@@ -2662,7 +2678,7 @@ shTravisCryptoAesDecryptYml() {(set -e
     then
         shInit
         CRYPTO_AES_ENCRYPTED_SH="$(curl -Ls \
-            "https://kaizhu256.github.io/node-utility2/CRYPTO_AES_ENCRYPTED_SH.$GITHUB_ORG")"
+            https://kaizhu256.github.io/node-utility2/CRYPTO_AES_ENCRYPTED_SH.$GITHUB_ORG)"
     fi
     printf "$CRYPTO_AES_ENCRYPTED_SH" | shCryptoAesDecrypt
 )}
