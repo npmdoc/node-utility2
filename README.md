@@ -1,5 +1,5 @@
 # utility2
-the zero-dependency swiss-army-knife utility2 for building, testing, and deploying webapps
+the zero-dependency, swiss-army-knife utility for building, testing, and deploying webapps
 
 [![travis-ci.org build-status](https://api.travis-ci.org/kaizhu256/node-utility2.svg)](https://travis-ci.org/kaizhu256/node-utility2) [![istanbul-coverage](https://kaizhu256.github.io/node-utility2/build/coverage.badge.svg)](https://kaizhu256.github.io/node-utility2/build/coverage.html/index.html)
 

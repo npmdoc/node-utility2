@@ -2662,7 +2662,7 @@ shTravisCryptoAesDecryptYml() {(set -e
     then
         shInit
         CRYPTO_AES_ENCRYPTED_SH="$(curl -Ls \
-            "https://kaizhu256.github.io/node-utility2/$GITHUB_ORG/CRYPTO_AES_ENCRYPTED_SH")"
+            "https://kaizhu256.github.io/node-utility2/CRYPTO_AES_ENCRYPTED_SH.$GITHUB_ORG")"
     fi
     printf "$CRYPTO_AES_ENCRYPTED_SH" | shCryptoAesDecrypt
 )}
