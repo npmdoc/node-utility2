@@ -607,10 +607,23 @@ local.templateApidocMd = '\
                 packageJson: JSON.parse(readExample('package.json'))
             });
             Object.keys(options.packageJson).forEach(function (key) {
+                tmp = options.packageJson[key];
+                // strip email from npmdoc documentation
+                // https://github.com/npmdoc/node-npmdoc-hpp/issues/1
+                if (tmp) {
+                    delete tmp.email;
+                    if (Array.isArray(tmp)) {
+                        tmp.forEach(function (element) {
+                            if (element) {
+                                delete element.email;
+                            }
+                        });
+                    }
+                }
                 if (key[0] === '_') {
                     delete options.packageJson[key];
-                } else if (typeof options.packageJson[key] === 'string') {
-                    options.env['npm_package_' + key] = options.packageJson[key];
+                } else if (typeof tmp === 'string') {
+                    options.env['npm_package_' + key] = tmp;
                 }
             });
             if (options.modeRenderFast) {
