@@ -670,11 +670,23 @@ local.templateApidocMd = '\
             } catch (errorCaught) {
                 console.error(errorCaught);
             }
-//!! debugInline(typeof options.moduleDict[options.env.npm_package_name]);
+            tmp = {};
+            // handle case where module is a function
+            if (typeof moduleMain === 'function') {
+                (function () {
+                    var toString;
+                    toString = moduleMain.toString();
+                    tmp = function () {
+                        return;
+                    };
+                    tmp.toString = function () {
+                        return toString;
+                    };
+                }());
+            }
             // normalize moduleMain
             moduleMain = options.moduleDict[options.env.npm_package_name] =
-                local.objectSetDefault({}, moduleMain);
-//!! debugInline(typeof options.moduleDict[options.env.npm_package_name]);
+                local.objectSetDefault(tmp, moduleMain);
             // init circularList - builtin
             Object.keys(process.binding('natives')).forEach(function (key) {
                 if (!(/\/|_linklist|sys/).test(key)) {
