@@ -664,14 +664,17 @@ local.templateApidocMd = '\
             try {
                 console.error('apidocCreate - requiring ' + options.dir + ' ...');
                 moduleMain = {};
-                moduleMain = options.moduleDict[options.env.npm_package_name] =
-                    options.moduleDict[options.env.npm_package_name] ||
+                moduleMain = options.moduleDict[options.env.npm_package_name] ||
                     require(options.dir);
                 console.error('apidocCreate - ... required ' + options.dir);
             } catch (errorCaught) {
                 console.error(errorCaught);
             }
-            options.moduleDict[options.env.npm_package_name] = moduleMain;
+//!! debugInline(typeof options.moduleDict[options.env.npm_package_name]);
+            // normalize moduleMain
+            moduleMain = options.moduleDict[options.env.npm_package_name] =
+                local.objectSetDefault({}, moduleMain);
+//!! debugInline(typeof options.moduleDict[options.env.npm_package_name]);
             // init circularList - builtin
             Object.keys(process.binding('natives')).forEach(function (key) {
                 if (!(/\/|_linklist|sys/).test(key)) {
@@ -761,9 +764,6 @@ local.templateApidocMd = '\
             });
             options.exampleList = options.exampleList.slice(0, 20);
             local.apidocModuleDictAdd(options, options.moduleExtraDict);
-            // normalize moduleMain
-            moduleMain = options.moduleDict[options.env.npm_package_name] =
-                local.objectSetDefault({}, moduleMain);
             Object.keys(options.moduleDict).forEach(function (key) {
                 if (key.indexOf(options.env.npm_package_name + '.') !== 0) {
                     return;
@@ -776,7 +776,6 @@ local.templateApidocMd = '\
                 .sort()
                 .map(function (prefix) {
                     module = options.moduleDict[prefix];
-//!! debugInline(prefix, module, typeof module);
                     // handle case where module is a function
                     if (typeof module === 'function') {
                         module[prefix.split('.').slice(-1)[0]] =
