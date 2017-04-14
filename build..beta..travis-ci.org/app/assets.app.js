@@ -626,10 +626,23 @@ local.templateApidocMd = '\
                 packageJson: JSON.parse(readExample('package.json'))
             });
             Object.keys(options.packageJson).forEach(function (key) {
+                tmp = options.packageJson[key];
+                // strip email from npmdoc documentation
+                // https://github.com/npmdoc/node-npmdoc-hpp/issues/1
+                if (tmp) {
+                    delete tmp.email;
+                    if (Array.isArray(tmp)) {
+                        tmp.forEach(function (element) {
+                            if (element) {
+                                delete element.email;
+                            }
+                        });
+                    }
+                }
                 if (key[0] === '_') {
                     delete options.packageJson[key];
-                } else if (typeof options.packageJson[key] === 'string') {
-                    options.env['npm_package_' + key] = options.packageJson[key];
+                } else if (typeof tmp === 'string') {
+                    options.env['npm_package_' + key] = tmp;
                 }
             });
             if (options.modeRenderFast) {
@@ -662,13 +675,31 @@ local.templateApidocMd = '\
             ).map(readExample));
             // init moduleMain
             try {
+                console.error('apidocCreate - requiring ' + options.dir + ' ...');
                 moduleMain = {};
-                moduleMain = options.moduleDict[options.env.npm_package_name] =
-                    options.moduleDict[options.env.npm_package_name] ||
+                moduleMain = options.moduleDict[options.env.npm_package_name] ||
                     require(options.dir);
-            } catch (ignore) {
+                console.error('apidocCreate - ... required ' + options.dir);
+            } catch (errorCaught) {
+                console.error(errorCaught);
             }
-            options.moduleDict[options.env.npm_package_name] = moduleMain;
+            tmp = {};
+            // handle case where module is a function
+            if (typeof moduleMain === 'function') {
+                (function () {
+                    var toString;
+                    toString = moduleMain.toString();
+                    tmp = function () {
+                        return;
+                    };
+                    tmp.toString = function () {
+                        return toString;
+                    };
+                }());
+            }
+            // normalize moduleMain
+            moduleMain = options.moduleDict[options.env.npm_package_name] =
+                local.objectSetDefault(tmp, moduleMain);
             // init circularList - builtin
             Object.keys(process.binding('natives')).forEach(function (key) {
                 if (!(/\/|_linklist|sys/).test(key)) {
@@ -758,9 +789,6 @@ local.templateApidocMd = '\
             });
             options.exampleList = options.exampleList.slice(0, 20);
             local.apidocModuleDictAdd(options, options.moduleExtraDict);
-            // normalize moduleMain
-            moduleMain = options.moduleDict[options.env.npm_package_name] =
-                local.objectSetDefault({}, moduleMain);
             Object.keys(options.moduleDict).forEach(function (key) {
                 if (key.indexOf(options.env.npm_package_name + '.') !== 0) {
                     return;
@@ -1118,7 +1146,7 @@ local.templateApidocMd = '\
          * this function will if error exists, then print error.stack to stderr
          */
             if (error && !local.global.__coverage__) {
-                console.error(error.stack);
+                console.error(error);
             }
         };
 
@@ -9755,7 +9783,7 @@ instruction\n\
                     /*jslint evil: true*/\n\
                     eval(document.querySelector(\'#inputTextareaEval1\').value);\n\
                 } catch (errorCaught) {\n\
-                    console.error(errorCaught.stack);\n\
+                    console.error(errorCaught);\n\
                 }\n\
             }\n\
         };\n\
@@ -11778,7 +11806,7 @@ local.assetsDict['/favicon.ico'] = '';
                         try {
                             onNext(null, event);
                         } catch (errorCaught) {
-                            console.error(errorCaught.stack);
+                            console.error(errorCaught);
                         }
                     });
                     break;
@@ -13435,7 +13463,7 @@ return Utf8ArrayToStr(bff);
          * this function will if error exists, then print error.stack to stderr
          */
             if (error && !local.global.__coverage__) {
-                console.error(error.stack);
+                console.error(error);
             }
         };
 
@@ -13729,7 +13757,7 @@ return Utf8ArrayToStr(bff);
              */
                 // debug error
                 global.utility2_debugReplError = error;
-                console.error(error.stack);
+                console.error(error);
             };
             // save repl eval function
             self.evalDefault = self.eval;
@@ -19829,7 +19857,7 @@ local.templateUiResponseAjax = '\
         global.utility2_rollup;
     local.local = local;
 /* jslint-ignore-begin */
-local._stateInit({"utility2":{"assetsDict":{"/assets.index.template.html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{env.npm_package_name}} (v{{env.npm_package_version}})</title>\n<style>\n/*csslint\n    box-sizing: false,\n    universal-selector: false\n*/\n* {\n    box-sizing: border-box;\n}\nbody {\n    background: #dde;\n    font-family: Arial, Helvetica, sans-serif;\n    margin: 2rem;\n}\nbody > * {\n    margin-bottom: 1rem;\n}\n.utility2FooterDiv {\n    margin-top: 20px;\n    text-align: center;\n}\n</style>\n<style>\n/*csslint\n    ids: false,\n*/\n#outputPreJslint1 {\n    color: #d00;\n}\ntextarea {\n    font-family: monospace;\n    height: 10rem;\n    width: 100%;\n}\ntextarea[readonly] {\n    background: #ddd;\n}\n</style>\n</head>\n<body>\n<!-- utility2-comment\n<div id=\"ajaxProgressDiv1\" style=\"background: #d00; height: 2px; left: 0; margin: 0; padding: 0; position: fixed; top: 0; transition: background 0.5s, width 1.5s; width: 25%;\"></div>\nutility2-comment -->\n<h1>\n<!-- utility2-comment\n    <a\n        {{#if env.npm_package_homepage}}\n        href=\"{{env.npm_package_homepage}}\"\n        {{/if env.npm_package_homepage}}\n        target=\"_blank\"\n    >\nutility2-comment -->\n        {{env.npm_package_name}} (v{{env.npm_package_version}})\n<!-- utility2-comment\n    </a>\nutility2-comment -->\n</h1>\n<h3>{{env.npm_package_description}}</h3>\n<!-- utility2-comment\n<h4><a download href=\"assets.app.js\">download standalone app</a></h4>\nutility2-comment -->\n\n\n\n<label>edit or paste script below to cover and test</label>\n<textarea class=\"oneval onkeyup onreset\" id=\"inputTextareaEval1\">\n// remove comment below to disable jslint\n/*jslint\n    browser: true,\n    es6: true\n*/\n/*global window*/\n(function () {\n    \"use strict\";\n    var testCaseDict;\n    testCaseDict = {};\n    testCaseDict.modeTest = true;\n\n    // comment this testCase to disable the failed assertion demo\n    testCaseDict.testCase_failed_assertion_demo = function (\n        options,\n        onError\n    ) {\n    /*\n     * this function will demo a failed assertion test\n     */\n        // jslint-hack\n        window.utility2.nop(options);\n        window.utility2.assert(false, \"this is a failed assertion demo\");\n        onError();\n    };\n\n    testCaseDict.testCase_passed_ajax_demo = function (options, onError) {\n    /*\n     * this function will demo a passed ajax test\n     */\n        var data;\n        options = {url: \"/\"};\n        // test ajax request for main-page \"/\"\n        window.utility2.ajax(options, function (error, xhr) {\n            try {\n                // validate no error occurred\n                window.utility2.assert(!error, error);\n                // validate \"200 ok\" status\n                window.utility2.assert(xhr.statusCode === 200, xhr.statusCode);\n                // validate non-empty data\n                data = xhr.responseText;\n                window.utility2.assert(data && data.length > 0, data);\n                onError();\n            } catch (errorCaught) {\n                onError(errorCaught);\n            }\n        });\n    };\n\n    window.utility2.testRunDefault(testCaseDict);\n}());\n</textarea>\n<pre id=\"outputPreJsonStringify1\"></pre>\n<pre id=\"outputPreJslint1\"></pre>\n<label>instrumented-code</label>\n<textarea class=\"resettable\" id=\"outputTextarea1\" readonly></textarea>\n<label>stderr and stdout</label>\n<textarea class=\"resettable\" id=\"outputTextareaStdout1\" readonly></textarea>\n<button class=\"onclick onreset\" id=\"testRunButton2\">run internal test</button><br>\n<div class=\"resettable\" id=\"testReportDiv1\" style=\"display: none;\"></div>\n<div id=\"coverageReportDiv1\" class=\"resettable\"></div>\n<!-- utility2-comment\n{{#if isRollup}}\n<script src=\"assets.app.js\"></script>\n{{#unless isRollup}}\nutility2-comment -->\n<script src=\"assets.utility2.lib.istanbul.js\"></script>\n<script src=\"assets.utility2.lib.jslint.js\"></script>\n<script src=\"assets.utility2.lib.db.js\"></script>\n<script src=\"assets.utility2.lib.sjcl.js\"></script>\n<script src=\"assets.utility2.lib.uglifyjs.js\"></script>\n<script src=\"assets.utility2.js\"></script>\n<script src=\"jsonp.utility2._stateInit?callback=window.utility2._stateInit\"></script>\n<script>window.utility2.onResetBefore.counter += 1;</script>\n<script src=\"assets.example.js\"></script>\n<script src=\"assets.test.js\"></script>\n<script>window.utility2.onResetBefore();</script>\n<!-- utility2-comment\n{{/if isRollup}}\nutility2-comment -->\n<div class=\"utility2FooterDiv\">\n    [ this app was created with\n    <a href=\"https://github.com/kaizhu256/node-utility2\" target=\"_blank\">utility2</a>\n    ]\n</div>\n</body>\n</html>\n"},"env":{"NODE_ENV":"test","npm_package_description":"the zero-dependency, swiss-army-knife utility for building, testing, and deploying webapps","npm_package_homepage":"https://github.com/kaizhu256/node-utility2","npm_package_name":"utility2","npm_package_nameAlias":"utility2","npm_package_version":"2017.4.14"}}});
+local._stateInit({"utility2":{"assetsDict":{"/assets.index.template.html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{env.npm_package_name}} (v{{env.npm_package_version}})</title>\n<style>\n/*csslint\n    box-sizing: false,\n    universal-selector: false\n*/\n* {\n    box-sizing: border-box;\n}\nbody {\n    background: #dde;\n    font-family: Arial, Helvetica, sans-serif;\n    margin: 2rem;\n}\nbody > * {\n    margin-bottom: 1rem;\n}\n.utility2FooterDiv {\n    margin-top: 20px;\n    text-align: center;\n}\n</style>\n<style>\n/*csslint\n    ids: false,\n*/\n#outputPreJslint1 {\n    color: #d00;\n}\ntextarea {\n    font-family: monospace;\n    height: 10rem;\n    width: 100%;\n}\ntextarea[readonly] {\n    background: #ddd;\n}\n</style>\n</head>\n<body>\n<!-- utility2-comment\n<div id=\"ajaxProgressDiv1\" style=\"background: #d00; height: 2px; left: 0; margin: 0; padding: 0; position: fixed; top: 0; transition: background 0.5s, width 1.5s; width: 25%;\"></div>\nutility2-comment -->\n<h1>\n<!-- utility2-comment\n    <a\n        {{#if env.npm_package_homepage}}\n        href=\"{{env.npm_package_homepage}}\"\n        {{/if env.npm_package_homepage}}\n        target=\"_blank\"\n    >\nutility2-comment -->\n        {{env.npm_package_name}} (v{{env.npm_package_version}})\n<!-- utility2-comment\n    </a>\nutility2-comment -->\n</h1>\n<h3>{{env.npm_package_description}}</h3>\n<!-- utility2-comment\n<h4><a download href=\"assets.app.js\">download standalone app</a></h4>\nutility2-comment -->\n\n\n\n<label>edit or paste script below to cover and test</label>\n<textarea class=\"oneval onkeyup onreset\" id=\"inputTextareaEval1\">\n// remove comment below to disable jslint\n/*jslint\n    browser: true,\n    es6: true\n*/\n/*global window*/\n(function () {\n    \"use strict\";\n    var testCaseDict;\n    testCaseDict = {};\n    testCaseDict.modeTest = true;\n\n    // comment this testCase to disable the failed assertion demo\n    testCaseDict.testCase_failed_assertion_demo = function (\n        options,\n        onError\n    ) {\n    /*\n     * this function will demo a failed assertion test\n     */\n        // jslint-hack\n        window.utility2.nop(options);\n        window.utility2.assert(false, \"this is a failed assertion demo\");\n        onError();\n    };\n\n    testCaseDict.testCase_passed_ajax_demo = function (options, onError) {\n    /*\n     * this function will demo a passed ajax test\n     */\n        var data;\n        options = {url: \"/\"};\n        // test ajax request for main-page \"/\"\n        window.utility2.ajax(options, function (error, xhr) {\n            try {\n                // validate no error occurred\n                window.utility2.assert(!error, error);\n                // validate \"200 ok\" status\n                window.utility2.assert(xhr.statusCode === 200, xhr.statusCode);\n                // validate non-empty data\n                data = xhr.responseText;\n                window.utility2.assert(data && data.length > 0, data);\n                onError();\n            } catch (errorCaught) {\n                onError(errorCaught);\n            }\n        });\n    };\n\n    window.utility2.testRunDefault(testCaseDict);\n}());\n</textarea>\n<pre id=\"outputPreJsonStringify1\"></pre>\n<pre id=\"outputPreJslint1\"></pre>\n<label>instrumented-code</label>\n<textarea class=\"resettable\" id=\"outputTextarea1\" readonly></textarea>\n<label>stderr and stdout</label>\n<textarea class=\"resettable\" id=\"outputTextareaStdout1\" readonly></textarea>\n<button class=\"onclick onreset\" id=\"testRunButton2\">run internal test</button><br>\n<div class=\"resettable\" id=\"testReportDiv1\" style=\"display: none;\"></div>\n<div id=\"coverageReportDiv1\" class=\"resettable\"></div>\n<!-- utility2-comment\n{{#if isRollup}}\n<script src=\"assets.app.js\"></script>\n{{#unless isRollup}}\nutility2-comment -->\n<script src=\"assets.utility2.lib.istanbul.js\"></script>\n<script src=\"assets.utility2.lib.jslint.js\"></script>\n<script src=\"assets.utility2.lib.db.js\"></script>\n<script src=\"assets.utility2.lib.sjcl.js\"></script>\n<script src=\"assets.utility2.lib.uglifyjs.js\"></script>\n<script src=\"assets.utility2.js\"></script>\n<script src=\"jsonp.utility2._stateInit?callback=window.utility2._stateInit\"></script>\n<script>window.utility2.onResetBefore.counter += 1;</script>\n<script src=\"assets.example.js\"></script>\n<script src=\"assets.test.js\"></script>\n<script>window.utility2.onResetBefore();</script>\n<!-- utility2-comment\n{{/if isRollup}}\nutility2-comment -->\n<div class=\"utility2FooterDiv\">\n    [ this app was created with\n    <a href=\"https://github.com/kaizhu256/node-utility2\" target=\"_blank\">utility2</a>\n    ]\n</div>\n</body>\n</html>\n"},"env":{"NODE_ENV":"test","npm_package_description":"the zero-dependency, swiss-army-knife utility for building, testing, and deploying webapps","npm_package_homepage":"https://github.com/kaizhu256/node-utility2","npm_package_name":"utility2","npm_package_nameAlias":"utility2","npm_package_version":"2017.4.15"}}});
 /* jslint-ignore-end */
 }());
 /* script-end local._stateInit */
@@ -20063,7 +20091,7 @@ instruction
                             coverage: window.__coverage__
                         });
                 } catch (errorCaught) {
-                    console.error(errorCaught.stack);
+                    console.error(errorCaught);
                 }
             }
             if (document.querySelector('#inputTextareaEval1') && (!event || (event &&
@@ -20076,7 +20104,7 @@ instruction
                     /*jslint evil: true*/
                     eval(document.querySelector('#inputTextareaEval1').value);
                 } catch (errorCaught) {
-                    console.error(errorCaught.stack);
+                    console.error(errorCaught);
                 }
             }
         };
@@ -20562,12 +20590,6 @@ utility2-comment -->\n\
                 local.assert(!error, error);
                 // validate statusCode
                 local.assertJsonEqual(xhr.statusCode, 200);
-                // validate responseText
-                local.assert(
-                    xhr.responseText
-                        .indexOf('"name": "' + local.env.npm_package_name + '",') >= 0,
-                    xhr.responseText
-                );
                 onError();
             });
         };
