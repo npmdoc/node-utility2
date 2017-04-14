@@ -10834,7 +10834,7 @@ local.objectLiteralize = function (arg) {
  * this function will if error exists, then print error.stack to stderr
  */
 </span>    if (error &amp;&amp; !local.global.__coverage__) {
-        console.error(error.stack);
+        console.error(error);
     }
 }</pre></li>
     <li>example usage<pre class="apidocCodePre">...
@@ -11554,7 +11554,7 @@ local.testCase_profileXxx_default = function (options, onError) {
      */
         // debug error
         global.utility2_debugReplError = error;
-        console.error(error.stack);
+        console.error(error);
     };
     // save repl eval function
     self.evalDefault = self.eval;
@@ -11659,7 +11659,7 @@ vendor\\)\\(\\b\\|[_s]\\)\
     // init process.stdout
     process.stdout._writeDefault = process.stdout._writeDefault ||
         process.stdout._write;
-    process.stdout._write = function (chunk, e ...</pre></li>
+    process.stdout._write = function (chunk, encodin ...</pre></li>
     <li>example usage<pre class="apidocCodePre">...
                 'assets.swgg.petstore.json',
                 local.env.SWAGGER_JSON_URL
@@ -16888,7 +16888,7 @@ arg[key] = arg === env
  * this function will if error exists, then print error.stack to stderr
  */
 </span>    if (error &amp;&amp; !local.global.__coverage__) {
-        console.error(error.stack);
+        console.error(error);
     }
 }</pre></li>
     <li>example usage<pre class="apidocCodePre">...
@@ -20037,7 +20037,7 @@ if (local.modeJs === 'node' &amp;&amp; process.env.npm_config_mode_coverage_merg
                 coverage: window.__coverage__
             });
     } catch (errorCaught) {
-        console.error(errorCaught.stack);
+        console.error(errorCaught);
     }
 }
 if (document.querySelector('#inputTextareaEval1') &amp;&amp; (!event || (event &amp;&amp;
@@ -23625,7 +23625,7 @@ if (!local.CSSLint.errors.length) {
                 coverage: window.__coverage__
             });
     } catch (errorCaught) {
-        console.<span class="apidocCodeKeywordSpan">error</span>(errorCaught.stack);
+        console.<span class="apidocCodeKeywordSpan">error</span>(errorCaught);
     }
 }
 if (document.querySelector('#inputTextareaEval1') &amp;&amp; (!event || (event &amp;&amp;

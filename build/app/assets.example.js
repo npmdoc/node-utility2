@@ -116,6 +116,7 @@
 
 
 
+
 /*
 example.js
 
@@ -336,7 +337,7 @@ instruction
                             coverage: window.__coverage__
                         });
                 } catch (errorCaught) {
-                    console.error(errorCaught.stack);
+                    console.error(errorCaught);
                 }
             }
             if (document.querySelector('#inputTextareaEval1') && (!event || (event &&
@@ -349,7 +350,7 @@ instruction
                     /*jslint evil: true*/
                     eval(document.querySelector('#inputTextareaEval1').value);
                 } catch (errorCaught) {
-                    console.error(errorCaught.stack);
+                    console.error(errorCaught);
                 }
             }
         };
