@@ -47,7 +47,7 @@
 }
 </style>
 <h1>api documentation for
-    <a href="https://github.com/kaizhu256/node-utility2">utility2 (v2017.4.14)</a>
+    <a href="https://github.com/kaizhu256/node-utility2">utility2 (v2017.4.15)</a>
 </h1>
 <h4>the zero-dependency, swiss-army-knife utility for building, testing, and deploying webapps</h4>
 <div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
@@ -6637,21 +6637,21 @@ break;
     local.assert(aa === bb, [aa, bb]);
 }</pre></li>
     <li>example usage<pre class="apidocCodePre">...
-* this function will test ajax's assets handling-behavior
-*/
-   options = { url: 'package.json' };
-   local.ajax(options, function (error, xhr) {
-       // validate no error occurred
-       local.assert(!error, error);
-       // validate statusCode
-       local.<span class="apidocCodeKeywordSpan">assertJsonEqual</span>(xhr.statusCode, 200);
-       // validate responseText
-       local.assert(
-           xhr.responseText
-               .indexOf('"name": "' + local.env.npm_package_name + '",') &gt;= 0,
-           xhr.responseText
-       );
-       onError();
+ * this function will test ajax's assets handling-behavior
+ */
+    options = { url: 'package.json' };
+    local.ajax(options, function (error, xhr) {
+        // validate no error occurred
+        local.assert(!error, error);
+        // validate statusCode
+        local.<span class="apidocCodeKeywordSpan">assertJsonEqual</span>(xhr.statusCode, 200);
+        onError();
+    });
+};
+
+local.testCase_ajax_error = function (options, onError) {
+/*
+ * this function will test ajax's error handling-behavior
 ...</pre></li>
     </ul>
 
@@ -22479,7 +22479,7 @@ e,t,n){var r=this._reader,i=e+r.read(),s=Tokens.type(i)||Tokens.CHAR;return this
         file = file
             .replace('https://github.com/kaizhu256/node-utility2', process.env.npm_package_homepage)
             .replace('utility2', process.env.npm_package_name)
-            .replace('2017.4.14', process.env.npm_package_version);
+            .replace('2017.4.15', process.env.npm_package_version);
     } else {
         file = file.replace((/&lt;h1 [\S\s]*&lt;\/h1&gt;/), '&lt;h1&gt;&amp;nbsp;&lt;/h1&gt;');
     }
